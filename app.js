@@ -5,13 +5,14 @@ import {PRESETS,validateBody,calculateFit,renderMannequin} from './mannequin.js'
 import {openCosplayListing} from './cosplay-seller.js';
 import {createStudioUI} from './studio-ui.js';
 import {rentalDays} from './cosplay-domain.js';
+import {filterMarketplaceListings,marketplaceThemes} from './marketplace-filter.js';
 
 const $=id=>document.getElementById(id);
 const DISCLAIMER='Virtual preview is an estimation and does not guarantee actual fit.';
 const CONDITIONS={like_new:'เหมือนใหม่',good:'สภาพดี',defect:'มีตำหนิ'};
-let repo,state,modalRenderer=null,previousFocus,toastTimer,studio=null;
+let repo,state,modalRenderer=null,previousFocus,toastTimer,studio=null,heroStudio=null,heroMount=0;
 let mixStudio=null,studioCatalog=null,studioCatalogError='',studioRouteApplied='';
-let filters={q:'',size:'',condition:'',maxPrice:'',sort:'latest'};
+let filters={q:'',theme:'',type:'',size:'',condition:'',maxPrice:'',sort:'latest'};
 const me=()=>state?.settings.currentUserId;
 const user=id=>state.profiles.find(p=>p.id===id);
 const listing=id=>state.listings.find(l=>l.id===id);
@@ -29,6 +30,14 @@ function modal(title,renderer,{wide=false}={}){if(!$('modal').open)previousFocus
 async function run(action,payload={}){const actorId=me(),result=await repo.dispatch(action,payload,actorId);state=await repo.read();render();if(modalRenderer&&$('modal').open)$('modalBody').replaceChildren(modalRenderer());return result}
 function go(hash){close();if(location.hash===hash)render();else location.hash=hash}
 function requireUser(){if(me())return true;openAccounts(ctx);return false}
+function clearHeroStudio(){heroMount++;heroStudio?.dispose?.();heroStudio=null}
+function mountHeroStudio(host,status){
+  const mount=++heroMount;
+  import('./hero-studio.js').then(({createHeroStudio})=>{
+    if(mount!==heroMount||!host.isConnected)return;
+    heroStudio=createHeroStudio(host,state,studioCatalog,messages=>{status.textContent=messages.length?messages.join(' · '):'ลากเพื่อหมุนหุ่น 360°'});
+  }).catch(error=>{console.error(error);if(mount===heroMount)status.textContent='ไม่สามารถเปิดตัวอย่าง 3D ได้ · เปิด 3D Studio เพื่อโหลดใหม่'});
+}
 const ctx={get state(){return state},run,modal,close,toast,task,openCloset:tab=>go(`#closet/${tab==='selling'?'listings':tab||'listings'}`)};
 const heading=(eyebrow,title,copy)=>h('div',{class:'page-heading'},h('p',{class:'eyebrow'},eyebrow),h('h1',{},title),copy&&note(copy));
 const empty=(title,copy)=>h('div',{class:'empty-state'},h('h2',{},title),note(copy),h('a',{class:'secondary',href:'#shop'},'กลับ Marketplace'));
@@ -39,6 +48,7 @@ function render(){
   $('accountBtn').textContent=user(me())?.name||'บัญชีเดโม';
   const [route,id,routeVariant]=location.hash.slice(1).split('/');
   const inStudio=!route||route==='studio';document.body.classList.toggle('studio-active',inStudio);
+  clearHeroStudio();
   if(inStudio){if(!mixStudio)mixStudio=createStudioUI({...ctx,get state(){return state},rental:openRental,accounts:()=>openAccounts(ctx)},studioCatalog,studioCatalogError);else mixStudio.update(state);if($('page').firstChild!==mixStudio.element)$('page').replaceChildren(mixStudio.element);const routeKey=id?`${id}/${routeVariant||''}`:'';if(routeKey&&routeKey!==studioRouteApplied){studioRouteApplied=routeKey;task(()=>mixStudio.wearItem(id,routeVariant));}if(!routeKey)studioRouteApplied='';return;}
   studioRouteApplied='';
   const view=route==='product'?productPage(id):route==='tryon'?tryOnPage(id):route==='rentals'?rentalsPage():route==='saved'?savedPage():route==='closet'?closetPage(id||'listings'):route==='rental'?confirmationPage(id):marketplace();
@@ -55,18 +65,21 @@ function card(l){
 
 function marketplace(){
   const grid=h('div',{class:'product-grid'}),count=h('span',{class:'result-count'});
-  const rows=()=>state.listings.filter(l=>live(l)&&(!filters.condition||l.condition===filters.condition)&&[l.character,l.title,l.series,l.description].join(' ').toLowerCase().includes(filters.q.trim().toLowerCase())&&l.sizeVariants.some(v=>v.stock&&(!filters.size||v.size===filters.size)&&(!filters.maxPrice||v.price<=Number(filters.maxPrice)))).sort((a,b)=>filters.sort==='price'?minPrice(a)-minPrice(b):b.publishedAt-a.publishedAt);
+  const rows=()=>filterMarketplaceListings(state.listings,filters);
   function update(){const list=rows();count.textContent=`${list.length} ชุดที่พร้อมให้เช่า`;grid.replaceChildren(...(list.length?list.map(card):[empty('ยังไม่พบชุดที่ค้นหา','ลองเปลี่ยนคำค้น ไซซ์ หรือราคาเช่าต่อวัน')]))}
   const select=(key,label,options)=>h('select',{'aria-label':label,onchange:e=>{filters[key]=e.target.value;update()}},...options.map(([v,t])=>h('option',{value:v,selected:filters[key]===v},t)));
-  update();const hero=state.listings.find(live)||state.listings.find(l=>l.status!=='deleted');
-  return h('div',{},
+  const themeNames={academy:'Academy',fantasy:'Fantasy',gothic:'Gothic'};
+  const heroHost=h('div',{class:'hero-studio-viewport'}),heroStatus=h('small',{class:'hero-studio-status'},'กำลังเปิดหุ่น 3D…');
+  const root=h('div',{},
     h('section',{class:'hero cosplay-hero'},h('div',{},h('p',{class:'eyebrow'},'A NEW CHARACTER. A NEW CHAPTER.'),h('h1',{},'สวมบทบาทใหม่',h('em',{},'ในแบบของคุณ')),note('ค้นพบชุดคอสเพลย์ให้เช่า เลือกช่วงวันที่ และลองภาพรวมบนหุ่นก่อนส่งคำขอ'),h('a',{class:'dark hero-cta',href:'#studio'},'เปิด 3D Studio ↗'),h('p',{class:'hero-footnote'},'VIRTUAL COSPLAY MANNEQUIN · PERSONAL FIT PREVIEW')),
-      hero?h('a',{class:'cosplay-hero-art',href:`#tryon/${hero.id}`},h('img',{src:photoUrl(cover(hero)),alt:hero.title}),h('span',{class:'hero-caption'},'THE COSTUME EDIT',h('small',{},'ลองจินตนาการ ก่อนเช่าชุดจริง'))):h('div',{class:'cosplay-hero-art'},empty('ยังไม่มีชุดใน Marketplace','เริ่มลงชุดให้เช่าชุดแรกของคุณ'))),
+      h('div',{class:'cosplay-hero-art studio-hero'},heroHost,h('div',{class:'hero-studio-copy'},heroStatus,h('a',{class:'hero-caption',href:'#studio'},'3D COSTUME STUDIO',h('small',{},'ลากเพื่อหมุน · คลิกเพื่อเปิด Studio ↗'))))),
     h('section',{class:'catalog-shell'},h('div',{class:'section-head'},h('div',{},h('p',{class:'eyebrow'},'THE MARKETPLACE'),h('h2',{},'ชุดใหม่ของเรื่องราวคุณ')),count),
-      h('div',{class:'toolbar'},h('label',{class:'search'},'⌕',h('input',{value:filters.q,placeholder:'ค้นหาตัวละคร ชื่อชุด หรือเรื่องราว','aria-label':'ค้นหาชุดคอสเพลย์',oninput:e=>{filters.q=e.target.value;update()}})),
+      h('div',{class:'toolbar marketplace-toolbar'},h('label',{class:'search'},'⌕',h('input',{value:filters.q,placeholder:'ค้นหาตัวละคร ชื่อชุด หรือเรื่องราว','aria-label':'ค้นหาชุดคอสเพลย์',oninput:e=>{filters.q=e.target.value;update()}})),
+        select('theme','ธีม',[['','ทุกธีม'],...marketplaceThemes(state.listings).map(x=>[x,themeNames[x]||x])]),select('type','ชนิด',[['','ทุกชนิด'],['top','เสื้อ'],['bottom','กางเกง'],['wig','วิก'],['accessory','เครื่องประดับ']]),
         select('size','ไซซ์',[['','ทุกไซซ์'],...['S','M','L','XL'].map(x=>[x,x])]),select('condition','สภาพ',[['','ทุกสภาพ'],...Object.entries(CONDITIONS)]),
         field('ราคาเช่า/วันไม่เกิน',h('input',{type:'number',min:0,value:filters.maxPrice,placeholder:'฿',oninput:e=>{filters.maxPrice=e.target.value;update()}})),select('sort','เรียงลำดับ',[['latest','ล่าสุด'],['price','ราคาต่ำก่อน']])),
       grid,h('p',{class:'asset-note'},'ภาพและตัวละครเป็นภาพประกอบสำหรับเดโม ประกาศให้เช่าและราคาเป็นข้อมูลสาธิต')));
+  update();mountHeroStudio(heroHost,heroStatus);return root;
 }
 
 function gallery(l){

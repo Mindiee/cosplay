@@ -30,7 +30,8 @@ test('active commerce navigation uses rental wording and routes',async()=>{
   ]);
   assert.match(app,/function openRental\(/);
   assert.match(app,/rental\.create/);
-  assert.match(html,/<nav aria-label="เมนูหลัก"><a href="#studio">3D Studio<\/a><a href="#shop">Marketplace<\/a><a href="#rentals">My Rentals<\/a><a href="#saved">Saved<\/a><a href="#closet\/listings">My Closet<\/a><\/nav>/);
+  assert.match(html,/<nav aria-label="เมนูหลัก"><a href="#studio">3D Studio<\/a><a href="#shop">Marketplace<\/a><\/nav>/);
+  assert.match(html,/<div class="nav-actions"><button class="chip" id="accountBtn">บัญชีเดโม<\/button><a class="header-link" href="#rentals">My Rentals<\/a><a class="header-link" href="#saved">Saved<\/a><a class="header-link" href="#closet\/listings">My Closet<\/a><button class="dark" id="sellBtn">＋ ลงชุดให้เช่า<\/button><\/div>/);
   assert.match(app,/route==='rentals'\?rentalsPage\(\)/);
   assert.match(app,/route==='saved'\?savedPage\(\)/);
   assert.match(app,/href:'#rentals'/);
@@ -52,4 +53,19 @@ test('active commerce navigation uses rental wording and routes',async()=>{
   assert.match(seller,/ราคาเช่าต่อวัน/);
   assert.match(html,/ลงชุดให้เช่า/);
   assert.match(styles,/\.topbar nav\{display:flex;order:3;width:100%;flex:0 0 100%;[^}]*overflow-x:auto/);
+});
+
+test('Marketplace hero reuses the Studio renderer and desktop filters expose theme and piece type',async()=>{
+  const [app,heroStudio]=await Promise.all([
+    readFile(new URL('app.js',root),'utf8'),
+    readFile(new URL('hero-studio.js',root),'utf8'),
+  ]);
+  assert.match(app,/import\('\.\/hero-studio\.js'\)/);
+  assert.match(app,/class:'cosplay-hero-art studio-hero'/);
+  assert.doesNotMatch(app,/class:'cosplay-hero-art',href:`#tryon\/\$\{hero\.id\}`/);
+  assert.match(app,/select\('theme','ธีม'/);
+  assert.match(app,/select\('type','ชนิด'/);
+  assert.match(heroStudio,/from '\.\/studio-renderer\.js'/);
+  assert.match(heroStudio,/profileStudio/);
+  assert.doesNotMatch(heroStudio,/\.glb['"]/);
 });
