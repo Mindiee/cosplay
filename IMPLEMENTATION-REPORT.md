@@ -1,48 +1,60 @@
-# Cosplay Marketplace MVP — Implementation Report
+# Cosplay Rental Marketplace MVP — Implementation Report
 
 ## ขอบเขตที่ส่งมอบ
 
-เว็บเดิมถูกเปลี่ยนเป็น **CLOSET — Cosplay Marketplace** โดยยังใช้ HTML, CSS และ JavaScript modules และคงข้อมูลแบบ local-first ใน IndexedDB ระบบใหม่แยก state ด้วยคีย์ `cosplay-v1` ในฐานข้อมูลเดิม ส่วนคีย์ Closet เก่า `main` ไม่ถูกลบหรือแก้รูปแบบ
+เว็บ **CLOSET — Cosplay Marketplace** เปลี่ยนเส้นทางหลักจากซื้อขายเป็นเช่าแบบ Frontend-only โดยใช้ HTML, CSS, JavaScript modules และ IndexedDB เดิม ไม่มี backend, API, database ภายนอก หรือ payment จริง
 
-หน้าและเส้นทางหลักที่ใช้งานได้:
+เส้นทางที่ใช้งานได้:
 
-- Marketplace: สินค้าสาธิตออริจินัล 12 ชุด ค้นหาตัวละคร/ชื่อชุด กรองไซซ์ ราคา สภาพ และบันทึกรายการโปรด
-- Product Detail: แกลเลอรีตรงกับสินค้า เลือกไซซ์ ดูขนาดจริง ภาพตำหนิ ซูม เลื่อน Try On และ Buy Now
-- My Mannequin: preset Slim/Regular/Curvy ปรับส่วนสูง อก เอว สะโพก ไหล่ แสดงผลทันที บันทึกแยกบัญชี
-- Virtual Try-On: เลเยอร์วิก ชุดหลัก เสื้อคลุม รองเท้า และเครื่องประดับ ปรับตามขนาดของ variant พร้อม Fit Summary
-- Direct Purchase: ตรวจสต็อกล่าสุด ตัด variant ที่เลือก เก็บ snapshot แล้วแสดง Order Confirmed
-- Seller: ลงขาย 4 ขั้น หลายไซซ์ ภาพต้นฉบับ ตำหนิ PNG โปร่งใส พรีวิวหุ่นมาตรฐาน ราคา และเผยแพร่
-- My Closet: My Listings, Sold, Purchases, Saved, My Mannequin และ Earnings
+- Marketplace: ค้นหา กรองไซซ์ ราคาเช่าต่อวัน และสภาพ พร้อมรายการโปรดเดิม
+- Product Detail: เลือกไซซ์ ดูขนาด รูปตำหนิ Try On และเปิดแบบฟอร์มเช่า
+- Rental Review: เลือกไซซ์ วันรับ วันคืน ดูจำนวนวันและราคารวมก่อนส่งคำขอ
+- My Rentals: ผู้เช่าเห็นรายละเอียดและสถานะ `รอยืนยัน` หรือ `ยืนยันแล้ว`
+- Rental Requests: ผู้ให้เช่าเห็นคำขอของประกาศตนเองและกดยืนยันได้
+- Listing: ลงชุดให้เช่าหลายไซซ์ ระบุราคาเช่าต่อวัน รูป ตำหนิ และพรีวิว
+- 3D Studio: หุ่นชาย/หญิง โมเดล 3D การหมุน กล้อง สัดส่วน fit และการผสมชิ้นส่วนเดิมทั้งหมด พร้อมปุ่มเช่าที่เปิด Rental Review เดียวกัน
 
-## โครงสร้างสำคัญ
+## ข้อมูลและกฎ Booking
 
-- `cosplay-domain.js`: validation และ state transition ทั้งหมด รวมสิทธิ์บัญชีและกฎซื้อ
-- `cosplay-seed.js`: seed state และรายการสาธิต 12 ชุด
-- `repository.js`: IndexedDB repository ใหม่ การอ่าน-เขียนหนึ่ง transaction และ BroadcastChannel ระหว่างแท็บ
-- `mannequin.js`: กฎ fit, validation, geometry และ SVG renderer
-- `cosplay-seller.js`: workflow ลงขายและแก้ไขประกาศ
-- `app.js`: routing และ UI buyer/seller
-- `cosplay-assets/`: แกลเลอรีและเลเยอร์ SVG ที่สร้างในโปรเจกต์ ไม่มีภาพบุคคลหรือ asset ภายนอก
+Rental Booking เก็บใน `state.rentals` ภายใต้ IndexedDB key `cosplay-v1` และมี `listingId`, `variantId`, `renterId`, `sellerId`, `size`, `pickupDate`, `returnDate`, `dailyPrice`, `rentalDays`, `totalPrice`, `status`, timestamps และ snapshot ของประกาศ
 
-## กฎ Fit ที่ใช้
+- จำนวนวันนับแบบ inclusive: วันรับ 11 กันยายนและวันคืน 13 กันยายนเท่ากับ 3 วัน
+- Booking ใหม่มีสถานะ `pending`; เฉพาะบัญชีผู้ให้เช่าเท่านั้นที่เปลี่ยนเป็น `confirmed`
+- Booking ที่ `confirmed` กันช่วงวันที่ทับซ้อนของ listing และ variant เดียวกัน
+- Pending หลายคำขออยู่ร่วมกันได้ แต่ระบบตรวจวันชนอีกครั้งก่อนยืนยัน
+- การเช่าไม่ตัดสต็อกถาวร จึงกลับมาเช่าช่วงวันที่ไม่ทับซ้อนได้
+- ข้อมูล `orders` เดิมยังอยู่และไม่ถูกแปลงหรือลบ แต่ไม่แสดงในเส้นทาง Rental MVP
+- Repository เดิมบันทึก transition ใน IndexedDB transaction และใช้ BroadcastChannel แจ้งการเปลี่ยนแปลงระหว่างแท็บ
 
-อก เอว และสะโพกเปรียบเทียบ `ขนาดชุด - ขนาดร่างกาย`: ต่ำกว่า 0 = Tight, 0–6 = Good, มากกว่า 6–12 = Slightly Loose และมากกว่า 12 = Loose ไหล่ใช้ช่วง 0–2 และ 2–4 ซม. ความยาวใช้จุดปลายชุดเอว/เข่า/ข้อเท้าเทียบกับสัดส่วนความสูง และยอมรับคลาดเคลื่อน ±5 ซม. ข้อมูลที่ขาดคืนค่า “ยังประเมินไม่ได้”
+## ไฟล์หลัก
 
-ข้อความ `Virtual preview is an estimation and does not guarantee actual fit.` แสดงติดกับผลประเมินทุกครั้ง
-
-SVG เหมาะกับต้นแบบนี้เพราะ path และองค์ประกอบภายในปรับ geometry ได้โดยตรงตามสัดส่วนแต่ละจุด [MDN: SVG path](https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Element/path) ส่วนการซื้อใช้ transaction เดียวตามรูปแบบการทำงานของ IndexedDB [MDN: IndexedDB API](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)
+- `cosplay-domain.js`: วันที่ ราคา availability สิทธิ์ และ state transition ของ Rental
+- `cosplay-seed.js`: state version 3 พร้อม `rentals: []`
+- `repository.js`: normalize state เก่าและบันทึก Booking ใน transaction เดิม
+- `app.js`: Rental Review, confirmation, My Rentals และ Rental Requests
+- `studio-ui.js`: เชื่อมชิ้นที่เลือกใน 3D Studio เข้าสู่ Rental Review
+- `cosplay-seller.js`: ฟอร์มลงชุดให้เช่าและราคาเช่าต่อวัน
+- `tests/rental-domain.test.mjs`: กฎวัน ราคา snapshot สิทธิ์และวันชน
 
 ## หลักฐานการตรวจ
 
-- `npm test`: 40/40 ผ่าน
-- JavaScript syntax: `app.js`, `repository.js`, `cosplay-domain.js`, `cosplay-seller.js`, `mannequin.js` ผ่าน
-- Browser desktop 1440×1000 และ mobile 390×844: ไม่มี console/page error และไม่มี horizontal overflow
-- Buyer flow ผ่าน: ค้นหา → รายละเอียด → Try On → แก้สัดส่วน → Save → Buy Now → Order Confirmed → Purchases → reload
-- Seller flow ผ่าน: สลับบัญชี → ลงประกาศหลายไซซ์ → อัปโหลดภาพ → ตั้งราคา → Publish → Marketplace → fallback ไม่มีภาพซ้อน
-- Seller accounting ผ่าน: คำสั่งซื้อปรากฏใน Sold และยอด Earnings ตรงกับ snapshot
-- Browser concurrency ผ่าน: เปิดสองแท็บยืนยันซื้อ variant เดียวกันพร้อมกัน ระบบสร้างคำสั่งซื้อได้หนึ่งรายการและตัดสต็อกครั้งเดียว
-- ประกาศที่พักขายเปิดจากลิงก์ตรงได้เพื่อดูข้อมูล แต่ปุ่ม Buy Now ถูกปิดทั้งหน้ารายละเอียดและห้องลอง
+- Automated tests: 67/67 ผ่านหลังเพิ่ม Rental Flow
+- Syntax checks: `app.js`, `cosplay-domain.js`, `cosplay-seed.js`, `cosplay-seller.js`, `repository.js`, `studio-ui.js` ผ่าน
+- Browser desktop: Marketplace → Product Detail → เช่า 3 วัน ราคา ฿990 × 3 = ฿2,970 → My Rentals → reload ผ่าน
+- Seller flow: สลับจาก Nicha เป็น June → Rental Requests → ยืนยัน → สลับกลับ Nicha → My Rentals แสดง `ยืนยันแล้ว`
+- Availability: ช่วงวันที่ชนกับ confirmed booking ถูกปฏิเสธและค่าที่กรอกยังอยู่; ช่วงเริ่มวันถัดจากวันคืนสร้างได้
+- 3D Studio: WebGL โหลดสำเร็จ หุ่นและชุดเดิมยังอยู่ ปุ่ม `เช่าชิ้นนี้` เปิด Rental Review เดียวกับ Product Detail
+- Mobile 390×844: Marketplace และ Rental Review ใช้งานได้ ช่องวันเรียงแนวตั้ง ไม่มี console error
+- Implementation commits: `55a021e` (rental domain), `b1c14b2` (rental UI and 3D integration)
 
-## ข้อจำกัดที่ยังต้องมี backend ก่อนใช้งานจริง
+## การเปิดเดโม
 
-การเข้าสู่ระบบ การจ่ายเงินจริง การจัดส่ง การยืนยันเจ้าของสินค้า การ moderation การซิงก์หลายเครื่อง การจัดเก็บไฟล์ถาวร และการล็อกสินค้าระหว่างผู้ใช้หลายอุปกรณ์ยังเป็นข้อมูลจำลองในเบราว์เซอร์ ภาพลองชุดยังเป็น 2D layer และไม่จำลองผ้า แสง ท่าทาง หรือความยืดหยุ่น
+```bash
+npm start
+```
+
+เปิด `http://127.0.0.1:4173/#shop` หรือเว็บสาธารณะ `https://closet-flax-one.vercel.app/#shop`
+
+## ข้อจำกัด
+
+ข้อมูลอยู่ในเบราว์เซอร์เดียวและอาจหายเมื่อล้าง site data ไม่มี payment, deposit, delivery tracking, chat, review, notifications ภายนอก หรือการล็อก inventory ข้ามเครื่อง โมเดล 3D เป็นภาพประมาณจากสินค้าตัวอย่างและไม่รับประกันความพอดีจริง
