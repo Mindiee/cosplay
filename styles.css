@@ -16,4 +16,4 @@
 .zoom-controls button:last-child{width:auto;min-width:38px}
 .match-budget{display:grid;grid-template-columns:1fr auto;align-items:end;gap:8px;padding:10px;background:var(--cream)}
 .match-budget .field{margin:0}
-@media(max-width:760px){.topbar nav{display:flex;order:3;width:100%;gap:18px;padding:7px 0 1px;border-top:1px solid var(--line)}.nav-actions .chip{display:inline-block;padding:8px;font-size:0}.nav-actions #accountBtn::after{content:'บัญชี';font-size:11px}.nav-actions #closetBtn::after{content:'Closet';font-size:11px}.toolbar .price-filter{min-width:0}.toolbar .price-filter input{width:100%}}
+@media(max-width:760px){.topbar nav{display:flex;order:3;width:100%;flex:0 0 100%;gap:18px;padding:7px 0 1px;border-top:1px solid var(--line);overflow-x:auto;scrollbar-width:thin}.nav-actions .chip{display:inline-block;padding:8px;font-size:0}.nav-actions #accountBtn::after{content:'บัญชี';font-size:11px}.toolbar .price-filter{min-width:0}.toolbar .price-filter input{width:100%}}

@@ -21,17 +21,23 @@ test('standalone My Mannequin navigation is removed while 3D Studio stays availa
 });
 
 test('active commerce navigation uses rental wording and routes',async()=>{
-  const [html,app,studio,seller]=await Promise.all([
+  const [html,app,studio,seller,styles]=await Promise.all([
     readFile(new URL('index.html',root),'utf8'),
     readFile(new URL('app.js',root),'utf8'),
     readFile(new URL('studio-ui.js',root),'utf8'),
     readFile(new URL('cosplay-seller.js',root),'utf8'),
+    readFile(new URL('styles.css',root),'utf8'),
   ]);
   assert.match(app,/function openRental\(/);
   assert.match(app,/rental\.create/);
-  assert.match(app,/#closet\/rentals/);
+  assert.match(html,/<nav aria-label="เมนูหลัก"><a href="#studio">3D Studio<\/a><a href="#shop">Marketplace<\/a><a href="#rentals">My Rentals<\/a><a href="#saved">Saved<\/a><a href="#closet\/listings">My Closet<\/a><\/nav>/);
+  assert.match(app,/route==='rentals'\?rentalsPage\(\)/);
+  assert.match(app,/route==='saved'\?savedPage\(\)/);
+  assert.match(app,/href:'#rentals'/);
+  assert.match(app,/const tabs=\{listings:'My Listings',requests:'Rental Requests'\}/);
   assert.match(app,/requests:'Rental Requests'/);
-  assert.match(app,/rentals:'My Rentals'/);
+  assert.doesNotMatch(app,/tab==='rentals'|tab==='saved'/);
+  assert.doesNotMatch(html,/#closet\/(?:rentals|saved)/);
   assert.match(app,/rental\.confirm/);
   assert.match(app,/rental\.complete/);
   assert.match(app,/completed:'เสร็จสิ้น'/);
@@ -45,4 +51,5 @@ test('active commerce navigation uses rental wording and routes',async()=>{
   assert.doesNotMatch(studio,/ctx\.purchase|ซื้อชิ้นนี้/);
   assert.match(seller,/ราคาเช่าต่อวัน/);
   assert.match(html,/ลงชุดให้เช่า/);
+  assert.match(styles,/\.topbar nav\{display:flex;order:3;width:100%;flex:0 0 100%;[^}]*overflow-x:auto/);
 });

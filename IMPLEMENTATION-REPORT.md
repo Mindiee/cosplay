@@ -9,8 +9,9 @@
 - Marketplace: ค้นหา กรองไซซ์ ราคาเช่าต่อวัน และสภาพ พร้อมรายการโปรดเดิม
 - Product Detail: เลือกไซซ์ ดูขนาด รูปตำหนิ Try On และเปิดแบบฟอร์มเช่า
 - Rental Review: เลือกไซซ์ วันรับ วันคืน ดูจำนวนวันและราคารวมก่อนส่งคำขอ
-- My Rentals: ผู้เช่าเห็นรายละเอียดและสถานะ `รอยืนยัน`, `ยืนยันแล้ว` หรือ `เสร็จสิ้น`
-- Rental Requests: ผู้ให้เช่าเห็นคำขอของประกาศตนเอง กดยืนยัน และปิดงานเช่าได้
+- My Rentals: route ระดับบน `#rentals` สำหรับผู้เช่าดูรายละเอียดและสถานะ `รอยืนยัน`, `ยืนยันแล้ว` หรือ `เสร็จสิ้น`
+- My Closet: พื้นที่ผู้ให้เช่าที่มีเฉพาะ My Listings และ Rental Requests; ผู้ให้เช่ากดยืนยันและปิดงานเช่าได้
+- Saved: route ระดับบน `#saved` แยกจาก My Closet
 - Listing: ลงชุดให้เช่าหลายไซซ์ ระบุราคาเช่าต่อวัน รูป ตำหนิ และพรีวิว
 - 3D Studio: หุ่นชาย/หญิง โมเดล 3D การหมุน กล้อง สัดส่วน fit และการผสมชิ้นส่วนเดิมทั้งหมด พร้อมปุ่มเช่าที่เปิด Rental Review เดียวกัน
 
@@ -31,7 +32,7 @@ Rental Booking เก็บใน `state.rentals` ภายใต้ IndexedDB k
 - `cosplay-domain.js`: วันที่ ราคา availability สิทธิ์ และ state transition ของ Rental
 - `cosplay-seed.js`: state version 3 พร้อม `rentals: []`
 - `repository.js`: normalize state เก่าและบันทึก Booking ใน transaction เดิม
-- `app.js`: Rental Review, confirmation, My Rentals และ Rental Requests
+- `app.js`: Rental Review, confirmation, My Rentals แยกอิสระ และ My Closet ฝั่งผู้ให้เช่า
 - `studio-ui.js`: เชื่อมชิ้นที่เลือกใน 3D Studio เข้าสู่ Rental Review
 - `cosplay-seller.js`: ฟอร์มลงชุดให้เช่าและราคาเช่าต่อวัน
 - `tests/rental-domain.test.mjs`: กฎวัน ราคา snapshot สิทธิ์ วันชน และการปิดงานเช่า
