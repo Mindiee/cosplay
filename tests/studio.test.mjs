@@ -20,7 +20,7 @@ test('catalog upgrade merges new stable IDs without replacing sold stock, edits,
  s.studioProfiles={u1:{style:'female',outfit:{top:{listingId:l.id}},bodies:{}}};
  const newItem={...structuredClone(l),id:'studio-new',photos:[{id:'front',src:'studio-assets/photos/new.jpg',tag:'front'}],coverId:'front'};
  const catalog={version:1,items:[old.listings[0],newItem]};mergeStudioCatalog(s,catalog,20);mergeStudioCatalog(s,catalog,30);
- assert.equal(s.listings.length,old.listings.length+1);assert.equal(l.title,'My edited item');assert.equal(l.sizeVariants[0].stock,0);assert.deepEqual(s.profiles,old.profiles);assert.deepEqual(s.orders,old.orders);assert.equal(s.studioProfiles.u1.outfit.top.listingId,l.id);
+ assert.equal(s.listings.length,old.listings.length+1);assert.equal(l.title,'My edited item');assert.equal(l.sizeVariants[0].stock,0);assert.deepEqual(s.profiles,old.profiles);assert.deepEqual(s.orders,old.orders);assert.deepEqual(s.rentals,old.rentals);assert.equal(s.studioProfiles.u1.outfit.top.listingId,l.id);
 });
 test('catalog refreshes owned 3D asset metadata without replacing listing edits or stock',()=>{
  const s=ready(),l=s.listings[0];l.studioSeedVersion=1;l.title='Seller edit';l.sizeVariants[0].stock=0;l.model.url='studio-assets/models/broken.glb';
