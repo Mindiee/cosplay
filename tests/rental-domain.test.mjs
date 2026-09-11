@@ -74,6 +74,23 @@ test('only seller confirms and repeated confirmation preserves its timestamp',()
   assert.equal(state.rentals.find(row=>row.id===result.id).confirmedAt,confirmedAt);
 });
 
+test('only seller completes a confirmed rental and completion is final',()=>{
+  const state=makeCosplaySeed(NOW),item=rentable(state),variant=item.sizeVariants[0];
+  const result=act(state,'rental.create',{listingId:item.id,variantId:variant.id,pickupDate:'2026-09-11',returnDate:'2026-09-13'});
+  assert.throws(()=>act(state,'rental.complete',{id:result.id}),/ผู้ให้เช่า|ผู้ขาย/);
+  act(state,'profile.switch',{id:item.sellerId});
+  assert.throws(()=>act(state,'rental.complete',{id:result.id}),/ยืนยันแล้ว/);
+  act(state,'rental.confirm',{id:result.id});
+  const completed=act(state,'rental.complete',{id:result.id});
+  const booking=state.rentals.find(row=>row.id===result.id);
+  assert.deepEqual(completed,{id:result.id,status:'completed'});
+  assert.equal(booking.status,'completed');
+  assert.equal(booking.completedAt,NOW);
+  const completedAt=booking.completedAt;
+  assert.throws(()=>act(state,'rental.complete',{id:result.id}),/เสร็จสิ้นแล้ว/);
+  assert.equal(booking.completedAt,completedAt);
+});
+
 test('confirmed overlap blocks creation while next calendar day remains available',()=>{
   const state=makeCosplaySeed(NOW),item=rentable(state),variant=item.sizeVariants[0];
   const result=act(state,'rental.create',{listingId:item.id,variantId:variant.id,pickupDate:'2026-09-11',returnDate:'2026-09-13'});

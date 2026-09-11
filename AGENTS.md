@@ -11,7 +11,8 @@
 - Rental price is stored in `sizeVariants[].price` and displayed per day.
 - Rental bookings live in `state.rentals`; preserve `state.orders` as legacy history.
 - Only confirmed inclusive date ranges block the same listing and variant.
-- Keep rental creation and seller confirmation inside existing IndexedDB transactions.
+- Keep rental creation, seller confirmation and completion inside existing IndexedDB transactions.
+- Rental status follows `pending` → `confirmed` → `completed`; only the listing seller can advance it.
 - Keep legacy Closet data separate from cosplay data.
 - Preserve realistic male and female mannequins and independent top, bottom, wig, footwear and accessory slots.
 - Product photos represent real items. 3D garments are visual approximations.

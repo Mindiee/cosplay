@@ -130,10 +130,11 @@ function openRental(listingId,variantId){
   };
   modal('ตรวจทานคำขอเช่า',build);
 }
-const RENTAL_STATUS={pending:'รอยืนยัน',confirmed:'ยืนยันแล้ว'};
+const RENTAL_STATUS={pending:'รอยืนยัน',confirmed:'ยืนยันแล้ว',completed:'เสร็จสิ้น'};
 function rentalLine(booking,{sellerView=false}={}){
   const actions=h('div',{class:'rental-actions'},h('span',{class:`rental-status ${booking.status}`},RENTAL_STATUS[booking.status]||booking.status));
   if(sellerView&&booking.status==='pending')actions.append(button('ยืนยันการเช่า',async()=>{await run('rental.confirm',{id:booking.id});toast('ยืนยันคำขอเช่าแล้ว')},'dark'));
+  if(sellerView&&booking.status==='confirmed')actions.append(button('ปิดงานเช่า',async()=>{await run('rental.complete',{id:booking.id});toast('ปิดงานเช่าแล้ว')},'dark'));
   return h('article',{class:'cosplay-order rental-card'},h('img',{src:photoUrl(booking.listingSnapshot.image),alt:booking.listingSnapshot.title}),h('div',{},h('small',{},`#${booking.id.slice(-8)} · ${dt(booking.createdAt)}`),h('h3',{},`${booking.listingSnapshot.character} — ${booking.listingSnapshot.title}`),note(`ไซซ์ ${booking.size} · ${rentalDate(booking.pickupDate)} ถึง ${rentalDate(booking.returnDate)}`),note(`${money(booking.dailyPrice)} / วัน × ${booking.rentalDays} วัน · รวม ${money(booking.totalPrice)}`)),actions);
 }
 function confirmationPage(id){const booking=state.rentals.find(row=>row.id===id&&row.renterId===me());if(!booking)return empty('ไม่พบคำขอเช่า','เลือกบัญชีผู้เช่าเพื่อดูรายการ');return h('section',{class:'page-shell order-confirmation'},h('span',{class:'confirmation-icon rental-pending'},'…'),heading('RENTAL REQUEST CREATED','ส่งคำขอเช่าแล้ว','ผู้ให้เช่าจะตรวจสอบและยืนยันคำขอนี้'),rentalLine(booking),h('a',{class:'dark',href:'#closet/rentals'},'ดู My Rentals'),h('a',{class:'secondary',href:'#shop'},'เลือกชุดอื่นต่อ'))}

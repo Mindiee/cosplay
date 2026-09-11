@@ -33,6 +33,9 @@ test('active commerce navigation uses rental wording and routes',async()=>{
   assert.match(app,/requests:'Rental Requests'/);
   assert.match(app,/rentals:'My Rentals'/);
   assert.match(app,/rental\.confirm/);
+  assert.match(app,/rental\.complete/);
+  assert.match(app,/completed:'เสร็จสิ้น'/);
+  assert.match(app,/ปิดงานเช่า/);
   assert.doesNotMatch(app,/button\('Buy Now'/);
   assert.doesNotMatch(app,/purchases:'Purchases'/);
   assert.doesNotMatch(app,/sold:'Sold'/);

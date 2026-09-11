@@ -9,8 +9,8 @@
 - Marketplace: ค้นหา กรองไซซ์ ราคาเช่าต่อวัน และสภาพ พร้อมรายการโปรดเดิม
 - Product Detail: เลือกไซซ์ ดูขนาด รูปตำหนิ Try On และเปิดแบบฟอร์มเช่า
 - Rental Review: เลือกไซซ์ วันรับ วันคืน ดูจำนวนวันและราคารวมก่อนส่งคำขอ
-- My Rentals: ผู้เช่าเห็นรายละเอียดและสถานะ `รอยืนยัน` หรือ `ยืนยันแล้ว`
-- Rental Requests: ผู้ให้เช่าเห็นคำขอของประกาศตนเองและกดยืนยันได้
+- My Rentals: ผู้เช่าเห็นรายละเอียดและสถานะ `รอยืนยัน`, `ยืนยันแล้ว` หรือ `เสร็จสิ้น`
+- Rental Requests: ผู้ให้เช่าเห็นคำขอของประกาศตนเอง กดยืนยัน และปิดงานเช่าได้
 - Listing: ลงชุดให้เช่าหลายไซซ์ ระบุราคาเช่าต่อวัน รูป ตำหนิ และพรีวิว
 - 3D Studio: หุ่นชาย/หญิง โมเดล 3D การหมุน กล้อง สัดส่วน fit และการผสมชิ้นส่วนเดิมทั้งหมด พร้อมปุ่มเช่าที่เปิด Rental Review เดียวกัน
 
@@ -19,7 +19,7 @@
 Rental Booking เก็บใน `state.rentals` ภายใต้ IndexedDB key `cosplay-v1` และมี `listingId`, `variantId`, `renterId`, `sellerId`, `size`, `pickupDate`, `returnDate`, `dailyPrice`, `rentalDays`, `totalPrice`, `status`, timestamps และ snapshot ของประกาศ
 
 - จำนวนวันนับแบบ inclusive: วันรับ 11 กันยายนและวันคืน 13 กันยายนเท่ากับ 3 วัน
-- Booking ใหม่มีสถานะ `pending`; เฉพาะบัญชีผู้ให้เช่าเท่านั้นที่เปลี่ยนเป็น `confirmed`
+- Booking ใหม่มีสถานะ `pending`; เฉพาะบัญชีผู้ให้เช่าเท่านั้นที่เปลี่ยนเป็น `confirmed` และปิดเป็น `completed`
 - Booking ที่ `confirmed` กันช่วงวันที่ทับซ้อนของ listing และ variant เดียวกัน
 - Pending หลายคำขออยู่ร่วมกันได้ แต่ระบบตรวจวันชนอีกครั้งก่อนยืนยัน
 - การเช่าไม่ตัดสต็อกถาวร จึงกลับมาเช่าช่วงวันที่ไม่ทับซ้อนได้
@@ -34,14 +34,14 @@ Rental Booking เก็บใน `state.rentals` ภายใต้ IndexedDB k
 - `app.js`: Rental Review, confirmation, My Rentals และ Rental Requests
 - `studio-ui.js`: เชื่อมชิ้นที่เลือกใน 3D Studio เข้าสู่ Rental Review
 - `cosplay-seller.js`: ฟอร์มลงชุดให้เช่าและราคาเช่าต่อวัน
-- `tests/rental-domain.test.mjs`: กฎวัน ราคา snapshot สิทธิ์และวันชน
+- `tests/rental-domain.test.mjs`: กฎวัน ราคา snapshot สิทธิ์ วันชน และการปิดงานเช่า
 
 ## หลักฐานการตรวจ
 
-- Automated tests: 67/67 ผ่านหลังเพิ่ม Rental Flow
+- Automated tests: 68/68 ผ่านหลังเพิ่ม Rental Flow และสถานะเสร็จสิ้น
 - Syntax checks: `app.js`, `cosplay-domain.js`, `cosplay-seed.js`, `cosplay-seller.js`, `repository.js`, `studio-ui.js` ผ่าน
 - Browser desktop: Marketplace → Product Detail → เช่า 3 วัน ราคา ฿990 × 3 = ฿2,970 → My Rentals → reload ผ่าน
-- Seller flow: สลับจาก Nicha เป็น June → Rental Requests → ยืนยัน → สลับกลับ Nicha → My Rentals แสดง `ยืนยันแล้ว`
+- Seller flow: สลับจาก Nicha เป็น June → Rental Requests → ยืนยัน → ปิดงานเช่า → สลับกลับ Nicha → My Rentals แสดง `เสร็จสิ้น`
 - Availability: ช่วงวันที่ชนกับ confirmed booking ถูกปฏิเสธและค่าที่กรอกยังอยู่; ช่วงเริ่มวันถัดจากวันคืนสร้างได้
 - 3D Studio: WebGL โหลดสำเร็จ หุ่นและชุดเดิมยังอยู่ ปุ่ม `เช่าชิ้นนี้` เปิด Rental Review เดียวกับ Product Detail
 - Mobile 390×844: Marketplace และ Rental Review ใช้งานได้ ช่องวันเรียงแนวตั้ง ไม่มี console error

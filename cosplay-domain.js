@@ -91,7 +91,7 @@ export function transitionCosplay(state,action,payload={},now=Date.now(),actorId
     const conflict=state.rentals.some(row=>row.status==='confirmed'&&row.listingId===item.id&&row.variantId===variant.id&&rentalRangesOverlap(payload.pickupDate,payload.returnDate,row.pickupDate,row.returnDate));
     if(conflict)fail('ไซซ์นี้ไม่ว่างในวันที่เลือก');
     const seller=state.profiles.find(p=>p.id===item.sellerId),id=uid('rental',now);
-    state.rentals.push({id,listingId:item.id,variantId:variant.id,renterId:actor.id,sellerId:item.sellerId,size:variant.size,pickupDate:payload.pickupDate,returnDate:payload.returnDate,dailyPrice:variant.price,rentalDays:days,totalPrice:variant.price*days,status:'pending',createdAt:now,confirmedAt:null,listingSnapshot:{title:item.title,character:item.character,image:structuredClone(item.photos.find(p=>p.id===item.coverId)),sellerName:seller.name}});
+    state.rentals.push({id,listingId:item.id,variantId:variant.id,renterId:actor.id,sellerId:item.sellerId,size:variant.size,pickupDate:payload.pickupDate,returnDate:payload.returnDate,dailyPrice:variant.price,rentalDays:days,totalPrice:variant.price*days,status:'pending',createdAt:now,confirmedAt:null,completedAt:null,listingSnapshot:{title:item.title,character:item.character,image:structuredClone(item.photos.find(p=>p.id===item.coverId)),sellerName:seller.name}});
     event(action,{rentalId:id,userId:actor.id});return {id};
   }
   if(action==='rental.confirm'){
@@ -102,6 +102,13 @@ export function transitionCosplay(state,action,payload={},now=Date.now(),actorId
     const conflict=state.rentals.some(row=>row.id!==booking.id&&row.status==='confirmed'&&row.listingId===booking.listingId&&row.variantId===booking.variantId&&rentalRangesOverlap(booking.pickupDate,booking.returnDate,row.pickupDate,row.returnDate));
     if(conflict)fail('มีการยืนยันการเช่าที่ใช้วันเดียวกันแล้ว');
     booking.status='confirmed';booking.confirmedAt=now;event(action,{rentalId:booking.id,userId:actor.id});return {id:booking.id,status:booking.status};
+  }
+  if(action==='rental.complete'){
+    const booking=state.rentals.find(row=>row.id===payload.id)??fail('ไม่พบคำขอเช่า');
+    if(booking.sellerId!==actor.id)fail('เฉพาะผู้ให้เช่าเท่านั้นที่ปิดงานเช่าได้');
+    if(booking.status==='completed')fail('งานเช่านี้เสร็จสิ้นแล้ว');
+    if(booking.status!=='confirmed')fail('คำขอเช่าต้องอยู่ในสถานะยืนยันแล้วจึงปิดงานได้');
+    booking.status='completed';booking.completedAt=now;event(action,{rentalId:booking.id,userId:actor.id});return {id:booking.id,status:booking.status};
   }
   if(action==='purchase.create'){
     const item=find(payload.listingId),variant=item.sizeVariants.find(v=>v.id===payload.variantId);
