@@ -4,6 +4,7 @@ import {openAccounts} from './panels.js';
 import {PRESETS,validateBody,calculateFit,renderMannequin} from './mannequin.js';
 import {openCosplayListing} from './cosplay-seller.js';
 import {createStudioUI} from './studio-ui.js';
+import {rentalDays} from './cosplay-domain.js';
 
 const $=id=>document.getElementById(id);
 const DISCLAIMER='Virtual preview is an estimation and does not guarantee actual fit.';
@@ -38,9 +39,9 @@ function render(){
   $('accountBtn').textContent=user(me())?.name||'บัญชีเดโม';
   const [route,id,routeVariant]=location.hash.slice(1).split('/');
   const inStudio=!route||route==='studio';document.body.classList.toggle('studio-active',inStudio);
-  if(inStudio){if(!mixStudio)mixStudio=createStudioUI({...ctx,get state(){return state},purchase:openPurchase,accounts:()=>openAccounts(ctx)},studioCatalog,studioCatalogError);else mixStudio.update(state);if($('page').firstChild!==mixStudio.element)$('page').replaceChildren(mixStudio.element);const routeKey=id?`${id}/${routeVariant||''}`:'';if(routeKey&&routeKey!==studioRouteApplied){studioRouteApplied=routeKey;task(()=>mixStudio.wearItem(id,routeVariant));}if(!routeKey)studioRouteApplied='';return;}
+  if(inStudio){if(!mixStudio)mixStudio=createStudioUI({...ctx,get state(){return state},rental:openRental,accounts:()=>openAccounts(ctx)},studioCatalog,studioCatalogError);else mixStudio.update(state);if($('page').firstChild!==mixStudio.element)$('page').replaceChildren(mixStudio.element);const routeKey=id?`${id}/${routeVariant||''}`:'';if(routeKey&&routeKey!==studioRouteApplied){studioRouteApplied=routeKey;task(()=>mixStudio.wearItem(id,routeVariant));}if(!routeKey)studioRouteApplied='';return;}
   studioRouteApplied='';
-  const view=route==='product'?productPage(id):route==='tryon'?tryOnPage(id):route==='closet'?closetPage(id||'listings'):route==='order'?confirmationPage(id):marketplace();
+  const view=route==='product'?productPage(id):route==='tryon'?tryOnPage(id):route==='closet'?closetPage(id||'listings'):route==='rental'?confirmationPage(id):marketplace();
   $('page').replaceChildren(view);
 }
 
@@ -49,23 +50,23 @@ function card(l){
   return h('article',{class:'product-card'},
     h('a',{class:'product-photo',href:`#product/${l.id}`},h('img',{src:photoUrl(cover(l)),alt:`${l.character} — ${l.title}`}),h('span',{class:'badge'},CONDITIONS[l.condition])),
     button(saved?'♥':'♡',()=>requireUser()&&run('favorite.toggle',{id:l.id}),'save-product',{'aria-label':`บันทึก ${l.title}`}),
-    h('div',{class:'product-info'},h('small',{},l.character),h('h3',{},h('a',{href:`#product/${l.id}`},l.title)),h('div',{class:'product-bottom'},h('span',{},l.sizeVariants.filter(v=>v.stock).map(v=>v.size).join(' / ')),h('b',{},money(minPrice(l))))));
+    h('div',{class:'product-info'},h('small',{},l.character),h('h3',{},h('a',{href:`#product/${l.id}`},l.title)),h('div',{class:'product-bottom'},h('span',{},l.sizeVariants.filter(v=>v.stock).map(v=>v.size).join(' / ')),h('b',{},`${money(minPrice(l))} / วัน`))));
 }
 
 function marketplace(){
   const grid=h('div',{class:'product-grid'}),count=h('span',{class:'result-count'});
   const rows=()=>state.listings.filter(l=>live(l)&&(!filters.condition||l.condition===filters.condition)&&[l.character,l.title,l.series,l.description].join(' ').toLowerCase().includes(filters.q.trim().toLowerCase())&&l.sizeVariants.some(v=>v.stock&&(!filters.size||v.size===filters.size)&&(!filters.maxPrice||v.price<=Number(filters.maxPrice)))).sort((a,b)=>filters.sort==='price'?minPrice(a)-minPrice(b):b.publishedAt-a.publishedAt);
-  function update(){const list=rows();count.textContent=`${list.length} ชุดที่พร้อมส่งต่อ`;grid.replaceChildren(...(list.length?list.map(card):[empty('ยังไม่พบชุดที่ค้นหา','ลองเปลี่ยนคำค้น ไซซ์ หรือราคา')]))}
+  function update(){const list=rows();count.textContent=`${list.length} ชุดที่พร้อมให้เช่า`;grid.replaceChildren(...(list.length?list.map(card):[empty('ยังไม่พบชุดที่ค้นหา','ลองเปลี่ยนคำค้น ไซซ์ หรือราคาเช่าต่อวัน')]))}
   const select=(key,label,options)=>h('select',{'aria-label':label,onchange:e=>{filters[key]=e.target.value;update()}},...options.map(([v,t])=>h('option',{value:v,selected:filters[key]===v},t)));
   update();const hero=state.listings.find(live)||state.listings.find(l=>l.status!=='deleted');
   return h('div',{},
-    h('section',{class:'hero cosplay-hero'},h('div',{},h('p',{class:'eyebrow'},'A NEW CHARACTER. A NEW CHAPTER.'),h('h1',{},'สวมบทบาทใหม่',h('em',{},'ในแบบของคุณ')),note('ค้นพบชุดคอสเพลย์ที่มีเรื่องราว ลองภาพรวมบนหุ่นของคุณ แล้วส่งต่อให้การผจญภัยครั้งใหม่'),h('a',{class:'dark hero-cta',href:'#studio'},'เปิด 3D Studio ↗'),h('p',{class:'hero-footnote'},'VIRTUAL COSPLAY MANNEQUIN · PERSONAL FIT PREVIEW')),
-      hero?h('a',{class:'cosplay-hero-art',href:`#tryon/${hero.id}`},h('img',{src:photoUrl(cover(hero)),alt:hero.title}),h('span',{class:'hero-caption'},'THE COSTUME EDIT',h('small',{},'ลองจินตนาการ ก่อนเลือกชุดจริง'))):h('div',{class:'cosplay-hero-art'},empty('ยังไม่มีชุดใน Marketplace','เริ่มลงขายชุดแรกของคุณ'))),
+    h('section',{class:'hero cosplay-hero'},h('div',{},h('p',{class:'eyebrow'},'A NEW CHARACTER. A NEW CHAPTER.'),h('h1',{},'สวมบทบาทใหม่',h('em',{},'ในแบบของคุณ')),note('ค้นพบชุดคอสเพลย์ให้เช่า เลือกช่วงวันที่ และลองภาพรวมบนหุ่นก่อนส่งคำขอ'),h('a',{class:'dark hero-cta',href:'#studio'},'เปิด 3D Studio ↗'),h('p',{class:'hero-footnote'},'VIRTUAL COSPLAY MANNEQUIN · PERSONAL FIT PREVIEW')),
+      hero?h('a',{class:'cosplay-hero-art',href:`#tryon/${hero.id}`},h('img',{src:photoUrl(cover(hero)),alt:hero.title}),h('span',{class:'hero-caption'},'THE COSTUME EDIT',h('small',{},'ลองจินตนาการ ก่อนเช่าชุดจริง'))):h('div',{class:'cosplay-hero-art'},empty('ยังไม่มีชุดใน Marketplace','เริ่มลงชุดให้เช่าชุดแรกของคุณ'))),
     h('section',{class:'catalog-shell'},h('div',{class:'section-head'},h('div',{},h('p',{class:'eyebrow'},'THE MARKETPLACE'),h('h2',{},'ชุดใหม่ของเรื่องราวคุณ')),count),
       h('div',{class:'toolbar'},h('label',{class:'search'},'⌕',h('input',{value:filters.q,placeholder:'ค้นหาตัวละคร ชื่อชุด หรือเรื่องราว','aria-label':'ค้นหาชุดคอสเพลย์',oninput:e=>{filters.q=e.target.value;update()}})),
         select('size','ไซซ์',[['','ทุกไซซ์'],...['S','M','L','XL'].map(x=>[x,x])]),select('condition','สภาพ',[['','ทุกสภาพ'],...Object.entries(CONDITIONS)]),
-        field('ราคาไม่เกิน',h('input',{type:'number',min:0,value:filters.maxPrice,placeholder:'฿',oninput:e=>{filters.maxPrice=e.target.value;update()}})),select('sort','เรียงลำดับ',[['latest','ล่าสุด'],['price','ราคาต่ำก่อน']])),
-      grid,h('p',{class:'asset-note'},'ภาพและตัวละครเป็นภาพประกอบออริจินัลที่สร้างสำหรับเดโม ไม่ใช่ประกาศขายจริง')));
+        field('ราคาเช่า/วันไม่เกิน',h('input',{type:'number',min:0,value:filters.maxPrice,placeholder:'฿',oninput:e=>{filters.maxPrice=e.target.value;update()}})),select('sort','เรียงลำดับ',[['latest','ล่าสุด'],['price','ราคาต่ำก่อน']])),
+      grid,h('p',{class:'asset-note'},'ภาพและตัวละครเป็นภาพประกอบสำหรับเดโม ประกาศให้เช่าและราคาเป็นข้อมูลสาธิต')));
 }
 
 function gallery(l){
@@ -80,14 +81,14 @@ function gallery(l){
   choose(chosen);return h('div',{class:'gallery'},viewport,thumbs,caption);
 }
 
-function sizePicker(l,chosen,onChange){return h('div',{class:'size-picker',role:'group','aria-label':'เลือกไซซ์'},...l.sizeVariants.map(v=>button(v.size,()=>onChange(v.id),v.id===chosen?'dark':'secondary',{'aria-pressed':String(v.id===chosen),title:v.stock?'พร้อมซื้อ':'ขายหมด'})))}
+function sizePicker(l,chosen,onChange,disableUnavailable=false){return h('div',{class:'size-picker',role:'group','aria-label':'เลือกไซซ์'},...l.sizeVariants.map(v=>button(v.size,()=>onChange(v.id),v.id===chosen?'dark':'secondary',{'aria-pressed':String(v.id===chosen),title:v.stock?'พร้อมให้เช่า':'ไซซ์นี้ยังไม่เปิดให้เช่า',disabled:disableUnavailable&&!v.stock})))}
 function dimensions(v){const names={shoulder:'ไหล่',chest:'อก',waist:'เอว',hip:'สะโพก',length:'ยาว'};return h('dl',{class:'measurements'},...Object.entries(names).map(([k,t])=>h('div',{},h('dt',{},t),h('dd',{},v.measurements[k]?`${v.measurements[k]} ซม.`:'ไม่ระบุ'))))}
 
 function productPage(id){
   const l=listing(id);if(!l||l.status==='deleted')return empty('ไม่พบชุดนี้','ประกาศอาจถูกนำออกแล้ว');
   let variant=firstVariant(l);const copy=h('div',{class:'detail-copy'});
-  function update(){copy.replaceChildren(h('p',{class:'eyebrow'},l.series),h('h1',{},l.character),h('h2',{},l.title),h('p',{class:'detail-price'},money(variant.price)),note(`${CONDITIONS[l.condition]} · ผู้ขาย ${user(l.sellerId)?.name||'บัญชีเดโม'}`),h('p',{},'เลือกไซซ์เพื่อดูขนาดที่วัดจริง'),sizePicker(l,variant.id,id=>{variant=l.sizeVariants.find(v=>v.id===id);update()}),!variant.stock?note('ไซซ์นี้ขายหมดแล้ว ยังลองภาพเพื่อเปรียบเทียบได้'):null,dimensions(variant),
-    h('div',{class:'product-cta'},button('Try On — ลองบนหุ่นของฉัน',()=>{studio=null;go(l.model?`#studio/${l.id}/${variant.id}`:`#tryon/${l.id}/${variant.id}`)},'dark'),button('Buy Now',()=>openPurchase(l.id,variant.id),'secondary',{disabled:l.status!=='active'||!variant.stock||l.sellerId===me()})),l.status!=='active'?note('ประกาศนี้พักขายอยู่ จึงยังซื้อไม่ได้'):null,h('p',{class:'disclaimer'},DISCLAIMER),h('hr'),h('h3',{},'รายละเอียดชุด'),note(l.description),h('h3',{},'สิ่งที่รวมในชุด'),h('ul',{},...l.components.map(c=>h('li',{},c))),l.defects.length?h('div',{class:'defect-box'},h('b',{},'รายละเอียดตำหนิ'),...l.defects.map(d=>note(`${labels.severity[d.severity]||d.severity}: ${d.description}`))):null,button(state.favorites[me()]?.includes(l.id)?'♥ บันทึกแล้ว':'♡ บันทึกชุดนี้',()=>requireUser()&&run('favorite.toggle',{id:l.id}),'text-btn'))}
+  function update(){copy.replaceChildren(h('p',{class:'eyebrow'},l.series),h('h1',{},l.character),h('h2',{},l.title),h('p',{class:'detail-price'},`${money(variant.price)} / วัน`),note(`${CONDITIONS[l.condition]} · ผู้ให้เช่า ${user(l.sellerId)?.name||'บัญชีเดโม'}`),h('p',{},'เลือกไซซ์เพื่อดูขนาดที่วัดจริง'),sizePicker(l,variant.id,id=>{variant=l.sizeVariants.find(v=>v.id===id);update()}),!variant.stock?note('ไซซ์นี้ยังไม่เปิดให้เช่า แต่ยังลองภาพเพื่อเปรียบเทียบได้'):null,dimensions(variant),
+    h('div',{class:'product-cta'},button('Try On — ลองบนหุ่นของฉัน',()=>{studio=null;go(l.model?`#studio/${l.id}/${variant.id}`:`#tryon/${l.id}/${variant.id}`)},'dark'),button('เช่าชุดนี้',()=>openRental(l.id,variant.id),'secondary',{disabled:l.status!=='active'||!variant.stock||l.sellerId===me()})),l.status!=='active'?note('ประกาศนี้พักการให้เช่าอยู่'):null,h('p',{class:'disclaimer'},DISCLAIMER),h('hr'),h('h3',{},'รายละเอียดชุด'),note(l.description),h('h3',{},'สิ่งที่รวมในชุด'),h('ul',{},...l.components.map(c=>h('li',{},c))),l.defects.length?h('div',{class:'defect-box'},h('b',{},'รายละเอียดตำหนิ'),...l.defects.map(d=>note(`${labels.severity[d.severity]||d.severity}: ${d.description}`))):null,button(state.favorites[me()]?.includes(l.id)?'♥ บันทึกแล้ว':'♡ บันทึกชุดนี้',()=>requireUser()&&run('favorite.toggle',{id:l.id}),'text-btn'))}
   update();return h('section',{class:'page-shell'},h('a',{class:'back-link',href:'#shop'},'← Marketplace'),h('div',{class:'detail product-detail'},gallery(l),copy));
 }
 
@@ -104,32 +105,48 @@ function tryOnPage(id){
   const routeVariant=location.hash.split('/')[2];
   if(!studio||studio.listingId!==id||studio.userId!==me())studio={listingId:id,userId:me(),variantId:l.sizeVariants.some(v=>v.id===routeVariant)?routeVariant:firstVariant(l).id,body:structuredClone(state.mannequins[me()]||PRESETS.Regular),mode:state.mannequins[me()]?'personal':'standard'};
   let variant=l.sizeVariants.find(v=>v.id===studio.variantId)||firstVariant(l);
-  const stage=h('div',{class:'mannequin-stage tryon-stage'}),summary=h('div',{class:'fit-summary','aria-live':'polite'}),picker=h('div'),price=h('b',{class:'tryon-price'}),error=h('p',{class:'form-error',role:'alert'}),buy=button('Buy Now',()=>openPurchase(l.id,variant.id),'dark full');
-  function update(){const errors=validateBody(studio.body);error.textContent=errors.join(' · ');if(errors.length){buy.disabled=true;return}stage.replaceChildren(renderMannequin(studio.body,l,variant,{guides:true}));if(!l.costumeLayers.length)stage.append(h('div',{class:'no-overlay'},h('img',{src:photoUrl(cover(l)),alt:l.title}),note('ยังไม่มีภาพโปร่งใส แสดงภาพต้นฉบับคู่หุ่น')));summary.replaceChildren(h('h3',{},'Fit Summary'),...calculateFit(studio.body,variant.measurements,l.lengthTarget).map(r=>h('div',{class:'fit-row'},h('span',{},r.label),h('strong',{'data-fit':r.status},r.status.replace('_',' ')),h('small',{},r.explanation))),note('เกณฑ์เดโมจากขนาดวัด ไม่ได้จำลองเนื้อผ้าหรือความยืด'));price.textContent=money(variant.price);buy.disabled=l.status!=='active'||!variant.stock||l.sellerId===me();picker.replaceChildren(sizePicker(l,variant.id,id=>{studio.variantId=id;variant=l.sizeVariants.find(v=>v.id===id);update()}))}
+  const stage=h('div',{class:'mannequin-stage tryon-stage'}),summary=h('div',{class:'fit-summary','aria-live':'polite'}),picker=h('div'),price=h('b',{class:'tryon-price'}),error=h('p',{class:'form-error',role:'alert'}),rent=button('เช่าชุดนี้',()=>openRental(l.id,variant.id),'dark full');
+  function update(){const errors=validateBody(studio.body);error.textContent=errors.join(' · ');if(errors.length){rent.disabled=true;return}stage.replaceChildren(renderMannequin(studio.body,l,variant,{guides:true}));if(!l.costumeLayers.length)stage.append(h('div',{class:'no-overlay'},h('img',{src:photoUrl(cover(l)),alt:l.title}),note('ยังไม่มีภาพโปร่งใส แสดงภาพต้นฉบับคู่หุ่น')));summary.replaceChildren(h('h3',{},'Fit Summary'),...calculateFit(studio.body,variant.measurements,l.lengthTarget).map(r=>h('div',{class:'fit-row'},h('span',{},r.label),h('strong',{'data-fit':r.status},r.status.replace('_',' ')),h('small',{},r.explanation))),note('เกณฑ์เดโมจากขนาดวัด ไม่ได้จำลองเนื้อผ้าหรือความยืด'));price.textContent=`${money(variant.price)} / วัน`;rent.disabled=l.status!=='active'||!variant.stock||l.sellerId===me();picker.replaceChildren(sizePicker(l,variant.id,id=>{studio.variantId=id;variant=l.sizeVariants.find(v=>v.id===id);update()}))}
   const mannequinSelect=h('select',{'aria-label':'เลือกหุ่น',onchange:e=>{studio.mode=e.target.value;studio.body=structuredClone(e.target.value==='personal'?state.mannequins[me()]:PRESETS.Regular);render()}},h('option',{value:'standard',selected:studio.mode==='standard'},'Standard Mannequin'),state.mannequins[me()]?h('option',{value:'personal',selected:studio.mode==='personal'},'สัดส่วนที่บันทึกไว้'):null);
   const edit=h('details',{class:'inline-measurements'},h('summary',{},'แก้ไขสัดส่วนเพื่อเปรียบเทียบ'),bodyEditor(studio.body,update),button('บันทึกสัดส่วนนี้',async()=>{if(!requireUser())return;const errors=validateBody(studio.body);if(errors.length){error.textContent=errors.join(' · ');return}await run('mannequin.save',{body:studio.body});studio.mode='personal';render();toast('บันทึกสัดส่วนแล้ว')},'secondary full'));
   update();
-  return h('section',{class:'page-shell studio-shell'},h('a',{class:'back-link',href:`#product/${l.id}`},'← กลับรายละเอียดชุด'),heading('VIRTUAL COSPLAY MANNEQUIN','ลองมองตัวเองในบทบาทใหม่'),h('div',{class:'tryon-layout'},h('aside',{class:'studio-controls'},h('p',{class:'eyebrow'},'YOUR CHARACTER'),h('h2',{},l.character),note(l.title),price,h('h3',{},'1. เลือกหุ่น'),mannequinSelect,!state.mannequins[me()]?h('a',{class:'text-btn',href:'#studio'},'ปรับหุ่นใน 3D Studio →'):null,edit,error,h('h3',{},'2. เลือกไซซ์'),picker,h('h3',{},'3. เปลี่ยนชุด'),h('select',{'aria-label':'เปลี่ยนชุด',onchange:e=>{studio=null;go(`#tryon/${e.target.value}`)}},...state.listings.filter(live).map(x=>h('option',{value:x.id,selected:x.id===l.id},`${x.character} — ${x.title}`)))),stage,h('aside',{class:'studio-results'},summary,buy,h('p',{class:'disclaimer'},DISCLAIMER))));
+  return h('section',{class:'page-shell studio-shell'},h('a',{class:'back-link',href:`#product/${l.id}`},'← กลับรายละเอียดชุด'),heading('VIRTUAL COSPLAY MANNEQUIN','ลองมองตัวเองในบทบาทใหม่'),h('div',{class:'tryon-layout'},h('aside',{class:'studio-controls'},h('p',{class:'eyebrow'},'YOUR CHARACTER'),h('h2',{},l.character),note(l.title),price,h('h3',{},'1. เลือกหุ่น'),mannequinSelect,!state.mannequins[me()]?h('a',{class:'text-btn',href:'#studio'},'ปรับหุ่นใน 3D Studio →'):null,edit,error,h('h3',{},'2. เลือกไซซ์'),picker,h('h3',{},'3. เปลี่ยนชุด'),h('select',{'aria-label':'เปลี่ยนชุด',onchange:e=>{studio=null;go(`#tryon/${e.target.value}`)}},...state.listings.filter(live).map(x=>h('option',{value:x.id,selected:x.id===l.id},`${x.character} — ${x.title}`)))),stage,h('aside',{class:'studio-results'},summary,rent,h('p',{class:'disclaimer'},DISCLAIMER))));
 }
 
-function openPurchase(listingId,variantId){
-  if(!requireUser())return;const actor=me(),l=listing(listingId),v=l?.sizeVariants.find(x=>x.id===variantId);if(!l||l.status!=='active'||!v||v.stock!==1){toast('ไซซ์นี้ไม่พร้อมขาย');return}let error='';
-  const build=()=>h('div',{class:'purchase-review stack'},h('img',{src:photoUrl(cover(l)),alt:l.title}),h('h2',{},l.character),note(l.title),h('p',{},`ไซซ์ ${v.size} · ${CONDITIONS[l.condition]}`),h('b',{class:'detail-price'},money(v.price)),note('ยืนยันแล้วจะตัดสต็อกเดโมทันที ไม่มีการชำระเงินหรือจัดส่งจริง'),error&&h('p',{class:'form-error',role:'alert'},error),button('ยืนยันซื้อจำลอง',async()=>{try{if(actor!==me())throw Error('บัญชีเปลี่ยนแล้ว กรุณาเริ่มซื้อใหม่');const result=await run('purchase.create',{listingId,variantId});go(`#order/${result.id}`)}catch(e){error=e.message;$('modalBody').replaceChildren(build())}},'dark'));
-  modal('ตรวจทานการซื้อจำลอง',build);
+function localDateKey(date=new Date()){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`}
+function rentalDate(value){const [year,month,day]=value.split('-').map(Number);return new Date(year,month-1,day,12).toLocaleDateString('th-TH',{dateStyle:'medium'})}
+function openRental(listingId,variantId){
+  if(!requireUser())return;
+  const actor=me(),item=listing(listingId);
+  if(!item||item.status!=='active'){toast('ชุดนี้ยังไม่พร้อมให้เช่า');return}
+  let chosenVariantId=item.sizeVariants.some(row=>row.id===variantId&&row.stock>0)?variantId:item.sizeVariants.find(row=>row.stock>0)?.id;
+  if(!chosenVariantId||item.sellerId===actor){toast('ไซซ์นี้ยังไม่พร้อมให้เช่า');return}
+  let pickupDate=localDateKey(),returnDate=pickupDate,error='';
+  const redraw=()=>{$('modalBody').replaceChildren(build())};
+  const build=()=>{
+    const variant=item.sizeVariants.find(row=>row.id===chosenVariantId);let days=0;
+    try{days=rentalDays(pickupDate,returnDate)}catch(cause){error=cause.message}
+    return h('div',{class:'rental-review stack'},h('img',{src:photoUrl(cover(item)),alt:item.title}),h('h2',{},item.character),note(item.title),h('p',{},`ไซซ์ ${variant.size} · ${CONDITIONS[item.condition]}`),sizePicker(item,chosenVariantId,id=>{chosenVariantId=id;error='';redraw()},true),h('div',{class:'rental-dates'},field('วันรับชุด',h('input',{type:'date',min:localDateKey(),value:pickupDate,onchange:event=>{pickupDate=event.target.value;error='';redraw()}})),field('วันคืนชุด',h('input',{type:'date',min:pickupDate,value:returnDate,onchange:event=>{returnDate=event.target.value;error='';redraw()}}))),h('div',{class:'rental-total'},note(`${money(variant.price)} / วัน × ${days||0} วัน`),h('strong',{},money(variant.price*days))),note('ส่งคำขอแล้วรอผู้ให้เช่ายืนยัน ไม่มีการชำระเงินจริง'),error&&h('p',{class:'form-error',role:'alert'},error),button('ส่งคำขอเช่าชุดนี้',async()=>{try{if(actor!==me())throw Error('บัญชีเปลี่ยนแล้ว กรุณาเริ่มเช่าใหม่');const result=await run('rental.create',{listingId,variantId:chosenVariantId,pickupDate,returnDate});go(`#rental/${result.id}`)}catch(cause){error=cause.message;redraw()}},'dark',{disabled:!days}));
+  };
+  modal('ตรวจทานคำขอเช่า',build);
 }
-function orderLine(o){return h('article',{class:'cosplay-order'},h('img',{src:photoUrl(cover(o.snapshot)),alt:o.snapshot.title}),h('div',{},h('small',{},`#${o.id.slice(-8)} · ${dt(o.createdAt)}`),h('h3',{},`${o.snapshot.character} — ${o.snapshot.title}`),note(`ไซซ์ ${o.size} · ${money(o.price)} · ยืนยันแล้ว`)))}
-function confirmationPage(id){const o=state.orders.find(x=>x.id===id&&x.buyerId===me());if(!o)return empty('ไม่พบคำสั่งซื้อ','เลือกบัญชีผู้ซื้อเพื่อดูรายการ');return h('section',{class:'page-shell order-confirmation'},h('span',{class:'confirmation-icon'},'✓'),heading('ORDER CONFIRMED','พร้อมสำหรับบทบาทใหม่','บันทึกการซื้อจำลองสำเร็จแล้ว'),orderLine(o),h('a',{class:'dark',href:'#closet/purchases'},'ดู Purchases'),h('a',{class:'secondary',href:'#shop'},'เลือกชุดอื่นต่อ'))}
+const RENTAL_STATUS={pending:'รอยืนยัน',confirmed:'ยืนยันแล้ว'};
+function rentalLine(booking,{sellerView=false}={}){
+  const actions=h('div',{class:'rental-actions'},h('span',{class:`rental-status ${booking.status}`},RENTAL_STATUS[booking.status]||booking.status));
+  if(sellerView&&booking.status==='pending')actions.append(button('ยืนยันการเช่า',async()=>{await run('rental.confirm',{id:booking.id});toast('ยืนยันคำขอเช่าแล้ว')},'dark'));
+  return h('article',{class:'cosplay-order rental-card'},h('img',{src:photoUrl(booking.listingSnapshot.image),alt:booking.listingSnapshot.title}),h('div',{},h('small',{},`#${booking.id.slice(-8)} · ${dt(booking.createdAt)}`),h('h3',{},`${booking.listingSnapshot.character} — ${booking.listingSnapshot.title}`),note(`ไซซ์ ${booking.size} · ${rentalDate(booking.pickupDate)} ถึง ${rentalDate(booking.returnDate)}`),note(`${money(booking.dailyPrice)} / วัน × ${booking.rentalDays} วัน · รวม ${money(booking.totalPrice)}`)),actions);
+}
+function confirmationPage(id){const booking=state.rentals.find(row=>row.id===id&&row.renterId===me());if(!booking)return empty('ไม่พบคำขอเช่า','เลือกบัญชีผู้เช่าเพื่อดูรายการ');return h('section',{class:'page-shell order-confirmation'},h('span',{class:'confirmation-icon rental-pending'},'…'),heading('RENTAL REQUEST CREATED','ส่งคำขอเช่าแล้ว','ผู้ให้เช่าจะตรวจสอบและยืนยันคำขอนี้'),rentalLine(booking),h('a',{class:'dark',href:'#closet/rentals'},'ดู My Rentals'),h('a',{class:'secondary',href:'#shop'},'เลือกชุดอื่นต่อ'))}
 
 function closetPage(tab){
   if(!me())return h('section',{class:'page-shell'},heading('MY CLOSET','พื้นที่ของคุณ'),button('เลือกบัญชีเดโม',()=>openAccounts(ctx),'dark'));
-  const tabs={listings:'My Listings',sold:'Sold',purchases:'Purchases',saved:'Saved',earnings:'Earnings'};
-  const own=state.listings.filter(l=>l.sellerId===me()&&l.status!=='deleted'),sales=state.orders.filter(o=>o.sellerId===me());let content=[];
-  if(tab==='purchases')content=state.orders.filter(o=>o.buyerId===me()).map(orderLine);
-  else if(tab==='sold')content=sales.map(orderLine);
-  else if(tab==='earnings')content=[h('div',{class:'earnings'},note('ยอดขายจำลองที่ยืนยันแล้ว'),h('strong',{},money(sales.reduce((s,o)=>s+o.price,0))),note(`${sales.length} คำสั่งซื้อ · ไม่มีการรับเงินจริง`)),...sales.map(orderLine)];
+  const tabs={listings:'My Listings',requests:'Rental Requests',rentals:'My Rentals',saved:'Saved'};
+  const own=state.listings.filter(l=>l.sellerId===me()&&l.status!=='deleted');let content=[];
+  if(tab==='rentals')content=state.rentals.filter(row=>row.renterId===me()).sort((a,b)=>b.createdAt-a.createdAt).map(row=>rentalLine(row));
+  else if(tab==='requests')content=state.rentals.filter(row=>row.sellerId===me()).sort((a,b)=>b.createdAt-a.createdAt).map(row=>rentalLine(row,{sellerView:true}));
   else if(tab==='saved')content=state.listings.filter(l=>state.favorites[me()]?.includes(l.id)&&l.status!=='deleted').map(card);
-  else content=own.map(l=>h('article',{class:'my-listing'},h('img',{src:photoUrl(cover(l)),alt:l.title}),h('div',{},h('h3',{},`${l.character} — ${l.title}`),note(l.sizeVariants.map(v=>`${v.size}: ${v.stock?'พร้อมขาย':'ขายแล้ว'}`).join(' · ')),note(l.status==='paused'?'พักขาย':'กำลังแสดงใน Marketplace')),h('div',{class:'row'},button('แก้ไข',()=>openCosplayListing(ctx,l.id)),button(l.status==='paused'?'เปิดขาย':'พักขาย',()=>run('listing.status',{id:l.id,status:l.status==='paused'?'active':'paused'}),'text-btn'),button('ลบ',()=>modal('นำประกาศออก',()=>h('div',{class:'stack'},note(`นำ ${l.title} ออกจาก Marketplace? ประวัติคำสั่งซื้อยังอยู่`),button('ยืนยันนำออก',async()=>{await run('listing.status',{id:l.id,status:'deleted'});close()},'dark'))),'text-btn'))));
-  return h('section',{class:'page-shell'},heading('MY CLOSET',`ตู้คอสเพลย์ของ ${user(me()).name}`),h('div',{class:'closet-nav'},...Object.entries(tabs).map(([k,t])=>h('a',{href:`#closet/${k}`,class:k===tab?'active':'','aria-current':k===tab?'page':null},t))),h('div',{class:tab==='saved'?'product-grid':'stack'},...(content.length?content:[empty('ยังไม่มีรายการในหมวดนี้','เริ่มเลือกชุดหรือส่งต่อชุดแรกของคุณ')])));
+  else content=own.map(l=>h('article',{class:'my-listing'},h('img',{src:photoUrl(cover(l)),alt:l.title}),h('div',{},h('h3',{},`${l.character} — ${l.title}`),note(l.sizeVariants.map(v=>`${v.size}: ${v.stock?'พร้อมให้เช่า':'ปิดรับเช่า'}`).join(' · ')),note(l.status==='paused'?'พักการให้เช่า':'กำลังแสดงใน Marketplace')),h('div',{class:'row'},button('แก้ไข',()=>openCosplayListing(ctx,l.id)),button(l.status==='paused'?'เปิดให้เช่า':'พักให้เช่า',()=>run('listing.status',{id:l.id,status:l.status==='paused'?'active':'paused'}),'text-btn'),button('ลบ',()=>modal('นำประกาศออก',()=>h('div',{class:'stack'},note(`นำ ${l.title} ออกจาก Marketplace? ประวัติการเช่ายังอยู่`),button('ยืนยันนำออก',async()=>{await run('listing.status',{id:l.id,status:'deleted'});close()},'dark'))),'text-btn'))));
+  return h('section',{class:'page-shell'},heading('MY CLOSET',`ตู้คอสเพลย์ของ ${user(me()).name}`),h('div',{class:'closet-nav'},...Object.entries(tabs).map(([k,t])=>h('a',{href:`#closet/${k}`,class:k===tab?'active':'','aria-current':k===tab?'page':null},t))),h('div',{class:tab==='saved'?'product-grid':'stack'},...(content.length?content:[empty('ยังไม่มีรายการในหมวดนี้','เริ่มเลือกชุดหรือเปิดให้เช่าชุดแรกของคุณ')])));
 }
 
 $('modalClose').onclick=close;

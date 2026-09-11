@@ -39,3 +39,8 @@ test('male and female measurements persist separately and never resize garment d
  assert.deepEqual(s.studioProfiles.u1.bodies,{female,male});assert.deepEqual(s.listings,before);
  assert.throws(()=>transitionCosplay(s,'studio.body.save',{style:'female',body:{...female,height:999}},4,'u1'));
 });
+test('studio listing can create a rental without consuming stock or changing outfit',()=>{
+ const s=ready(),l=s.listings[0],v=l.sizeVariants[0],beforeOutfit=structuredClone(s.studioProfiles);
+ transitionCosplay(s,'rental.create',{listingId:l.id,variantId:v.id,pickupDate:'2026-09-11',returnDate:'2026-09-12'},Date.UTC(2026,8,11,12),'u1');
+ assert.equal(s.rentals.length,1);assert.equal(v.stock,1);assert.deepEqual(s.studioProfiles,beforeOutfit);
+});
