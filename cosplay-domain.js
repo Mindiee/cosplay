@@ -2,7 +2,7 @@ import {BODY_LIMITS,profileStudio,validateStudioBody,cleanOutfit} from './studio
 const fail = message => { throw new Error(message); };
 const uid = (prefix,now) => `${prefix}-${now.toString(36)}-${Math.random().toString(36).slice(2,10)}`;
 const text = value => typeof value === 'string' && value.trim().length > 0;
-const source = value => (typeof Blob !== 'undefined' && value instanceof Blob && ['image/png','image/jpeg','image/webp'].includes(value.type) && value.size > 0 && value.size <= 10*1024*1024) || (typeof value === 'string' && (/^\.?\/?cosplay-assets\/[a-z0-9-]+\.svg$/.test(value)||/^studio-assets\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_.-]+\.(?:jpg|jpeg|png|webp)$/.test(value)));
+const source = value => (typeof Blob !== 'undefined' && value instanceof Blob && ['image/png','image/jpeg','image/webp'].includes(value.type) && value.size > 0 && value.size <= 10*1024*1024) || (typeof value === 'string' && (/^\.?\/?cosplay-assets\/[a-z0-9-]+\.svg$/.test(value)||/^(?:studio-assets|toosuepha-assets)\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_.-]+\.(?:jpg|jpeg|png|webp)$/.test(value)));
 const layerSource = value => (typeof Blob !== 'undefined' && value instanceof Blob && value.type === 'image/png' && value.size > 0 && value.size <= 10*1024*1024) || (typeof value === 'string' && /^\.?\/?cosplay-assets\/[a-z0-9-]+\.svg$/.test(value));
 const unique = rows => rows.every(row=>text(row.id)) && new Set(rows.map(row=>row.id)).size === rows.length;
 const DATE_PATTERN=/^(\d{4})-(\d{2})-(\d{2})$/;

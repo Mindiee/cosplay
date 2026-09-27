@@ -31,11 +31,12 @@ export function mergeStudioCatalog(state,catalog,now=Date.now()){
     existing.attachmentSlot=item.attachmentSlot;
     existing.category=item.category;
     existing.theme=item.theme;
+    existing.occasionCategory='costume';
    }
    continue;
   }
   if(!Object.hasOwn(SLOTS,item.attachmentSlot)||!item.model?.url||!state.profiles.some(p=>p.id===item.sellerId))continue;
-  state.listings.push({...structuredClone(item),costumeLayers:[],status:'active',publishedAt:now,updatedAt:now,studioSeedVersion:catalog.version});
+  state.listings.push({...structuredClone(item),occasionCategory:'costume',costumeLayers:[],status:'active',publishedAt:now,updatedAt:now,studioSeedVersion:catalog.version});
  }
  state.studioCatalogVersion=catalog.version;
  return state;

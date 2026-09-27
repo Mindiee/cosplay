@@ -85,6 +85,7 @@ export async function createRepository() {
 import { normalizeCosplayState, transitionCosplay } from './cosplay-domain.js';
 import { makeCosplaySeed } from './cosplay-seed.js';
 import { mergeStudioCatalog } from './studio-domain.js';
+import { normalizeOccasionCategories } from './occasion-domain.js';
 
 export async function createCosplayRepository(catalog=null) {
   const key='cosplay-v1',database=await openDatabase();
@@ -92,11 +93,11 @@ export async function createCosplayRepository(catalog=null) {
   if(channel&&typeof window!=='undefined')channel.onmessage=()=>window.dispatchEvent(new CustomEvent('closet:changed'));
   const init=database.transaction(STORE,'readwrite'),store=init.objectStore(STORE),done=transactionComplete(init);
   const existing=await requestResult(store.get(key));
-  if(existing===undefined){const legacy=await requestResult(store.get(KEY));store.put(normalizeCosplayState(mergeStudioCatalog(makeCosplaySeed(Date.now(),legacy),catalog)),key);}
-  else {normalizeCosplayState(existing);mergeStudioCatalog(existing,catalog);store.put(existing,key);}
+  if(existing===undefined){const legacy=await requestResult(store.get(KEY));store.put(normalizeOccasionCategories(normalizeCosplayState(mergeStudioCatalog(makeCosplaySeed(Date.now(),legacy),catalog))),key);}
+  else {normalizeOccasionCategories(normalizeCosplayState(existing));mergeStudioCatalog(existing,catalog);normalizeOccasionCategories(existing);store.put(existing,key);}
   await done;
   return {
-    async read(){const tx=database.transaction(STORE,'readonly'),done=transactionComplete(tx);const value=normalizeCosplayState(await requestResult(tx.objectStore(STORE).get(key)));await done;return value;},
+    async read(){const tx=database.transaction(STORE,'readonly'),done=transactionComplete(tx);const value=normalizeOccasionCategories(normalizeCosplayState(await requestResult(tx.objectStore(STORE).get(key))));await done;return value;},
     async dispatch(action,payload={},actor){
       const tx=database.transaction(STORE,'readwrite'),done=transactionComplete(tx),store=tx.objectStore(STORE);let result;
       try{const state=normalizeCosplayState(await requestResult(store.get(key)));const actorId=typeof actor==='object'?actor?.actorId:actor;result=transitionCosplay(state,action,payload,Date.now(),actorId===undefined?payload.actorId:actorId);store.put(state,key);}

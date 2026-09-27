@@ -17,6 +17,7 @@ export function filterMarketplaceListings(listings,filters={}){
   return listings.filter(item=>{
     const variants=activePriceRows(item);
     if(item.status!=='active'||!variants.length)return false;
+    if(filters.occasion&&item.occasionCategory!==filters.occasion)return false;
     if(filters.theme&&item.theme!==filters.theme)return false;
     if(filters.type&&marketplaceType(item)!==filters.type)return false;
     if(filters.condition&&item.condition!==filters.condition)return false;

@@ -2,19 +2,20 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#f6f1e8"><title>CLOSET — Cosplay Marketplace</title>
+<meta name="theme-color" content="#fafaf8"><meta name="description" content="TooSuePha ตลาดเช่าเสื้อผ้าสำหรับทุกโอกาส พร้อม Fit Match และหุ่นลองชุด 3D"><title>TooSuePha — Rental Marketplace</title>
 <link rel="icon" href="data:,"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="panels.css"><link rel="stylesheet" href="cosplay.css"><link rel="stylesheet" href="cosplay-seller.css"><link rel="stylesheet" href="studio.css">
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
 </head>
 <body class="cosplay-app">
 <a class="skip-link" href="#page">ข้ามไปเนื้อหา</a>
 <header class="topbar">
-<a class="brand" href="#studio" aria-label="Closet หน้าแรก">CLOSET<sup>®</sup><small>COSPLAY MARKETPLACE</small></a>
-<nav aria-label="เมนูหลัก"><a href="#studio">3D Studio</a><a href="#shop">Marketplace</a></nav>
+<a class="brand" href="#home" aria-label="TooSuePha หน้าแรก">TooSuePha<small>RENTAL MARKETPLACE</small></a>
+<nav aria-label="เมนูหลัก"><a href="#shop">เช่า</a><a href="#studio">3D Studio</a></nav>
 <div class="nav-actions"><button class="chip" id="accountBtn">บัญชีเดโม</button><a class="header-link" href="#rentals">My Rentals</a><a class="header-link" href="#saved">Saved</a><a class="header-link" href="#closet/listings">My Closet</a><button class="dark" id="sellBtn">＋ ลงชุดให้เช่า</button></div>
 </header>
-<main id="page" tabindex="-1"><p class="loading">กำลังเปิดตู้คอสเพลย์…</p></main>
-<footer><a class="brand" href="#shop">CLOSET<sup>®</sup></a><p>Cosplay, considered. <span>ข้อมูลเดโมเก็บในเบราว์เซอร์นี้ · ไม่มีการรับเงินจริง</span></p><a href="#studio">เปิด 3D Studio ↗</a></footer>
+<main id="page" tabindex="-1"><p class="loading">กำลังเปิด TooSuePha…</p></main>
+<footer><a class="brand" href="#home">TooSuePha</a><p>เลือกชุดที่ใช่ ส่งต่อชุดที่มี <span>ข้อมูลเดโมเก็บในเบราว์เซอร์นี้ · ไม่มีการรับเงินจริง</span></p><a href="#studio">เปิด 3D Studio ↗</a></footer>
+<nav class="mobile-nav" aria-label="เมนูมือถือ"><a href="#shop">ค้นหาชุด</a><a href="#studio">Studio</a><a href="#rentals">My Rentals</a><a href="#closet/overview">My Closet</a></nav>
 <dialog id="modal" aria-labelledby="modalTitle"><div class="dialog-shell"><header><p id="modalTitle"></p><button class="icon" id="modalClose" aria-label="ปิด">×</button></header><div id="modalBody"></div></div></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script type="module" src="app.js"></script>

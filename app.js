@@ -6,13 +6,14 @@ import {openCosplayListing} from './cosplay-seller.js';
 import {createStudioUI} from './studio-ui.js';
 import {rentalDays} from './cosplay-domain.js';
 import {filterMarketplaceListings,marketplaceThemes} from './marketplace-filter.js';
+import {OCCASION_CATEGORIES,OCCASION_LABELS} from './occasion-domain.js';
 
 const $=id=>document.getElementById(id);
 const DISCLAIMER='Virtual preview is an estimation and does not guarantee actual fit.';
 const CONDITIONS={like_new:'เหมือนใหม่',good:'สภาพดี',defect:'มีตำหนิ'};
 let repo,state,modalRenderer=null,previousFocus,toastTimer,studio=null,heroStudio=null,heroMount=0;
 let mixStudio=null,studioCatalog=null,studioCatalogError='',studioRouteApplied='';
-let filters={q:'',theme:'',type:'',size:'',condition:'',maxPrice:'',sort:'latest'};
+let filters={q:'',occasion:'',theme:'',type:'',size:'',condition:'',maxPrice:'',sort:'latest'};
 const me=()=>state?.settings.currentUserId;
 const user=id=>state.profiles.find(p=>p.id===id);
 const listing=id=>state.listings.find(l=>l.id===id);
@@ -47,11 +48,11 @@ function render(){
   if(!state)return;
   $('accountBtn').textContent=user(me())?.name||'บัญชีเดโม';
   const [route,id,routeVariant]=location.hash.slice(1).split('/');
-  const inStudio=!route||route==='studio';document.body.classList.toggle('studio-active',inStudio);
+  const inStudio=route==='studio';document.body.classList.toggle('studio-active',inStudio);
   clearHeroStudio();
   if(inStudio){if(!mixStudio)mixStudio=createStudioUI({...ctx,get state(){return state},rental:openRental,accounts:()=>openAccounts(ctx)},studioCatalog,studioCatalogError);else mixStudio.update(state);if($('page').firstChild!==mixStudio.element)$('page').replaceChildren(mixStudio.element);const routeKey=id?`${id}/${routeVariant||''}`:'';if(routeKey&&routeKey!==studioRouteApplied){studioRouteApplied=routeKey;task(()=>mixStudio.wearItem(id,routeVariant));}if(!routeKey)studioRouteApplied='';return;}
   studioRouteApplied='';
-  const view=route==='product'?productPage(id):route==='tryon'?tryOnPage(id):route==='rentals'?rentalsPage():route==='saved'?savedPage():route==='closet'?closetPage(id||'listings'):route==='rental'?confirmationPage(id):marketplace();
+  const view=route==='shop'?marketplace():route==='product'?productPage(id):route==='tryon'?tryOnPage(id):route==='rentals'?rentalsPage():route==='saved'?savedPage():route==='closet'?closetPage(id||'listings'):route==='rental'?confirmationPage(id):homePage();
   $('page').replaceChildren(view);
 }
 
@@ -63,23 +64,34 @@ function card(l){
     h('div',{class:'product-info'},h('small',{},l.character),h('h3',{},h('a',{href:`#product/${l.id}`},l.title)),h('div',{class:'product-bottom'},h('span',{},l.sizeVariants.filter(v=>v.stock).map(v=>v.size).join(' / ')),h('b',{},`${money(minPrice(l))} / วัน`))));
 }
 
+function homePage(){
+  let active=2;
+  const heroHost=h('div',{class:'hero-studio-viewport'}),heroStatus=h('small',{class:'hero-studio-status'},'กำลังเปิดหุ่น 3D…'),track=h('div',{class:'occasion-track'});
+  const draw=()=>track.replaceChildren(...OCCASION_CATEGORIES.map((key,index)=>{const label=OCCASION_LABELS[key];return h('button',{type:'button',class:`occasion-card ${index===active?'active':''}`,style:`--distance:${Math.abs(index-active)}`,onclick:()=>{if(index===active){filters.occasion=key;go('#shop');return}active=index;draw()},'aria-pressed':String(index===active)},h('img',{src:`toosuepha-assets/${key}.jpg`,alt:''}),h('span',{},h('strong',{},label.title),h('small',{},label.subtitle),h('small',{},index===active?'เลือกหมวดนี้ →':'เลื่อนมาตรงกลาง')))}));
+  draw();const root=h('div',{class:'home-page'},
+    h('section',{class:'hero cosplay-hero home-hero'},h('div',{},h('p',{class:'eyebrow'},'TOOSUEPHA · RENTAL MARKETPLACE'),h('h1',{},'เสื้อผ้าสำหรับ',h('em',{},'ทุกโอกาสของคุณ')),note('เลือกชุดที่ใช่ ส่งต่อชุดที่มี'),h('div',{class:'row'},h('a',{class:'secondary',href:'#shop'},'ค้นหาชุด'),h('a',{class:'dark',href:'#studio'},'พร้อมสร้างหุ่นจำลอง')),h('p',{class:'hero-footnote'},'FIT MATCH · 3D TRY-ON · RENTAL ONLY')),
+      h('div',{class:'cosplay-hero-art studio-hero'},heroHost,h('div',{class:'hero-studio-copy'},heroStatus,h('a',{class:'hero-caption',href:'#studio'},'3D STUDIO',h('small',{},'ลากเพื่อหมุน · เปิด Studio ↗'))))),
+    h('section',{class:'occasion-section'},h('p',{class:'eyebrow'},'DRESS FOR THE MOMENT'),h('h2',{},'เสื้อผ้าสำหรับทุกโอกาสของคุณ'),note('เลือกการใช้งาน แล้วค้นหาชุดที่พร้อมให้เช่า'),h('div',{class:'occasion-carousel'},button('←',()=>{active=(active-1+OCCASION_CATEGORIES.length)%OCCASION_CATEGORIES.length;draw()},'carousel-arrow',{'aria-label':'หมวดก่อนหน้า'}),track,button('→',()=>{active=(active+1)%OCCASION_CATEGORIES.length;draw()},'carousel-arrow',{'aria-label':'หมวดถัดไป'}))),
+    h('section',{class:'home-message'},h('p',{},'“ เลือกชุดที่ใช่ ส่งต่อชุดที่มี ”'),note('Find what fits. Try it on. Rent what you need.')),
+    h('section',{class:'home-steps'},...['01 Discover','02 Match & Try','03 Rent'].map((title,index)=>h('article',{},h('small',{},`0${index+1}`),h('h3',{},title),note(['ค้นหาเสื้อผ้าจากหมวดและช่วงวันที่','เทียบขนาดและลองบนหุ่น 3D','ยืนยันวันและติดตามการเช่า'][index])))));
+  mountHeroStudio(heroHost,heroStatus);return root;
+}
+
 function marketplace(){
   const grid=h('div',{class:'product-grid'}),count=h('span',{class:'result-count'});
   const rows=()=>filterMarketplaceListings(state.listings,filters);
   function update(){const list=rows();count.textContent=`${list.length} ชุดที่พร้อมให้เช่า`;grid.replaceChildren(...(list.length?list.map(card):[empty('ยังไม่พบชุดที่ค้นหา','ลองเปลี่ยนคำค้น ไซซ์ หรือราคาเช่าต่อวัน')]))}
   const select=(key,label,options)=>h('select',{'aria-label':label,onchange:e=>{filters[key]=e.target.value;update()}},...options.map(([v,t])=>h('option',{value:v,selected:filters[key]===v},t)));
   const themeNames={academy:'Academy',fantasy:'Fantasy',gothic:'Gothic'};
-  const heroHost=h('div',{class:'hero-studio-viewport'}),heroStatus=h('small',{class:'hero-studio-status'},'กำลังเปิดหุ่น 3D…');
   const root=h('div',{},
-    h('section',{class:'hero cosplay-hero'},h('div',{},h('p',{class:'eyebrow'},'A NEW CHARACTER. A NEW CHAPTER.'),h('h1',{},'สวมบทบาทใหม่',h('em',{},'ในแบบของคุณ')),note('ค้นพบชุดคอสเพลย์ให้เช่า เลือกช่วงวันที่ และลองภาพรวมบนหุ่นก่อนส่งคำขอ'),h('a',{class:'dark hero-cta',href:'#studio'},'เปิด 3D Studio ↗'),h('p',{class:'hero-footnote'},'VIRTUAL COSPLAY MANNEQUIN · PERSONAL FIT PREVIEW')),
-      h('div',{class:'cosplay-hero-art studio-hero'},heroHost,h('div',{class:'hero-studio-copy'},heroStatus,h('a',{class:'hero-caption',href:'#studio'},'3D COSTUME STUDIO',h('small',{},'ลากเพื่อหมุน · คลิกเพื่อเปิด Studio ↗'))))),
-    h('section',{class:'catalog-shell'},h('div',{class:'section-head'},h('div',{},h('p',{class:'eyebrow'},'THE MARKETPLACE'),h('h2',{},'ชุดใหม่ของเรื่องราวคุณ')),count),
+    h('section',{class:'catalog-shell'},h('div',{class:'section-head'},h('div',{},h('p',{class:'eyebrow'},'RENTAL MARKETPLACE'),h('h2',{},'ชุดพร้อมเช่าสำหรับทุกโอกาส')),count),
       h('div',{class:'toolbar marketplace-toolbar'},h('label',{class:'search'},'⌕',h('input',{value:filters.q,placeholder:'ค้นหาตัวละคร ชื่อชุด หรือเรื่องราว','aria-label':'ค้นหาชุดคอสเพลย์',oninput:e=>{filters.q=e.target.value;update()}})),
+        select('occasion','โอกาส',[['','ทุกโอกาส'],...OCCASION_CATEGORIES.map(key=>[key,OCCASION_LABELS[key].title])]),
         select('theme','ธีม',[['','ทุกธีม'],...marketplaceThemes(state.listings).map(x=>[x,themeNames[x]||x])]),select('type','ชนิด',[['','ทุกชนิด'],['top','เสื้อ'],['bottom','กางเกง'],['wig','วิก'],['accessory','เครื่องประดับ']]),
         select('size','ไซซ์',[['','ทุกไซซ์'],...['S','M','L','XL'].map(x=>[x,x])]),select('condition','สภาพ',[['','ทุกสภาพ'],...Object.entries(CONDITIONS)]),
         field('ราคาเช่า/วันไม่เกิน',h('input',{type:'number',min:0,value:filters.maxPrice,placeholder:'฿',oninput:e=>{filters.maxPrice=e.target.value;update()}})),select('sort','เรียงลำดับ',[['latest','ล่าสุด'],['price','ราคาต่ำก่อน']])),
       grid,h('p',{class:'asset-note'},'ภาพและตัวละครเป็นภาพประกอบสำหรับเดโม ประกาศให้เช่าและราคาเป็นข้อมูลสาธิต')));
-  update();mountHeroStudio(heroHost,heroStatus);return root;
+  update();return root;
 }
 
 function gallery(l){
