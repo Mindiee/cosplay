@@ -21,6 +21,6 @@ export function makeCosplaySeed(now=Date.now(),legacy=null){
   const photo={id:`${id}-front`,src:`toosuepha-assets/${occasion}.jpg`,tag:'front',hash:`toosuepha-svg-${occasion}-v1`};
   listings.push({id:`demo-${id}`,sellerId:['u2','u3'][i%2],occasionCategory:occasion,category,character:title,series:'TooSuePha Demo Collection',title,description:'ประกาศสาธิตสำหรับ Rental Marketplace ภาพประกอบนำมาจาก SVG อ้างอิงที่ผู้ใช้แนบ ไม่ใช่ภาพสต็อกสินค้าจริง',components:[title],condition:i%3===0?'like_new':'good',photos:[photo],coverId:photo.id,defects:[],costumeLayers:[],lengthTarget:category==='bottom'?'ankle':'waist',sizeVariants:['S','M','L'].map((size,index)=>({id:`${id}-${size}`,size,price:price+index*40,stock:1,measurements:{shoulder:38+index*2,chest:88+index*6,waist:70+index*6,hip:94+index*6,length:category==='bottom'?98+index:62+index}})),status:'active',publishedAt:now-(20+i)*86400000,updatedAt:now-(20+i)*86400000,demoAsset:true});
  });
- return {version:4,profiles,settings:{currentUserId},listings,orders:[],rentals:[],favorites:Object.fromEntries(profiles.map(p=>[p.id,[]])),mannequins:{},events:[]};
+ return {version:5,profiles,settings:{currentUserId},listings,orders:[],rentals:[],rentalBags:{},checkoutGroups:[],payments:[],ledger:[],favorites:Object.fromEntries(profiles.map(p=>[p.id,[]])),mannequins:{},events:[]};
 }
 export const makeSeed=makeCosplaySeed;
