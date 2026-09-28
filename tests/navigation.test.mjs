@@ -15,12 +15,12 @@ test('standalone My Mannequin navigation is removed while 3D Studio stays availa
   assert.doesNotMatch(app, /route\s*===\s*["']mannequin["']/);
   assert.doesNotMatch(app, /mannequin\s*:\s*["']My Mannequin["']/);
 
-  assert.match(html, /href=["']#studio["'][^>]*>เปิด 3D Studio/);
+  assert.match(html, /href=["']#studio["']/);
   assert.match(app, /createStudioUI\(/);
   assert.match(app, /route\s*===\s*["']studio["']/);
 });
 
-test('TooSuePha navigation separates home, marketplace, Studio, rentals and lender space',async()=>{
+test('TooSuePha Figma navigation keeps marketplace, rentals and lender actions reachable',async()=>{
   const [html,app,studio,seller,styles]=await Promise.all([
     readFile(new URL('index.html',root),'utf8'),
     readFile(new URL('app.js',root),'utf8'),
@@ -32,11 +32,13 @@ test('TooSuePha navigation separates home, marketplace, Studio, rentals and lend
   assert.match(app,/rentalBag\.add/);
   assert.match(app,/rental\.checkout/);
   assert.match(html,/<title>TooSuePha — Rental Marketplace<\/title>/);
-  assert.match(html,/class="brand" href="#home"[^>]*>TooSuePha/);
-  assert.match(html,/<nav class="mode-switch"[^>]*><a href="#shop">เช่า<\/a><a href="#closet\/listings">ปล่อยเช่า<\/a><\/nav>/);
-  assert.match(html,/href="#rentals"[^>]*aria-label="My Rentals"/);
-  assert.match(html,/href="#saved"[^>]*aria-label="Saved"/);
-  assert.match(html,/href="#closet\/listings"[^>]*aria-label="My Closet"/);
+  assert.match(html,/class="brand" href="#home"[^>]*>Too<span>SuePha<\/span>/);
+  assert.match(html,/class="figma-nav-links"/);
+  assert.match(html,/href="#shop"[^>]*>Marketplace<\/a>/);
+  assert.match(html,/href="#rentals"[^>]*>My Rentals<\/a>/);
+  assert.match(html,/href="#saved"[^>]*>Saved<\/a>/);
+  assert.match(html,/href="#closet\/listings"[^>]*>My Closet<\/a>/);
+  assert.match(html,/id="accountBtn"[^>]*>เข้าสู่ระบบเช่าชุด<\/button>/);
   assert.match(app,/route==='rentals'\?rentalsPage\(\)/);
   assert.match(app,/route==='saved'\?savedPage\(\)/);
   assert.match(app,/href:'#rentals'/);
@@ -64,7 +66,7 @@ test('TooSuePha navigation separates home, marketplace, Studio, rentals and lend
   assert.match(styles,/@media\(max-width:760px\)/);
 });
 
-test('Home hero matches the supplied Figma content while Marketplace keeps its filters',async()=>{
+test('Home matches the supplied Figma sections and reuses the existing 3D hero renderer',async()=>{
   const [app,styles]=await Promise.all([
     readFile(new URL('app.js',root),'utf8'),
     readFile(new URL('toosuepha.css',root),'utf8'),
@@ -78,8 +80,15 @@ test('Home hero matches the supplied Figma content while Marketplace keeps its f
   assert.match(app,/class:'home-hero-actions'/);
   assert.match(app,/href:'#shop'/);
   assert.match(app,/href:'#studio'/);
-  assert.doesNotMatch(app,/mountHeroStudio\(heroHost,heroStatus\)/);
+  assert.match(app,/mountHeroStudio\(heroHost,heroStatus\)/);
+  assert.match(app,/เสื้อผ้าสำหรับทุกโอกาสของคุณ/);
+  assert.match(app,/ชุดนี้จะพอดีกับเราไหม/);
+  assert.match(app,/Too Suea Pha ช่วยให้คุณตัดสินใจได้ก่อนเช่า/);
+  assert.match(app,/จากสัดส่วนสู่ชุดที่เหมาะกับคุณ ช่วยให้ตัดสินใจเช่าได้ง่ายขึ้น/);
+  assert.match(app,/พร้อมสร้างหุ่นจำลอง 3D ของคุณแล้วหรือยัง/);
   assert.match(styles,/\.home-hero-title/);
+  assert.match(styles,/\.home-hero \.studio-hero/);
+  assert.match(styles,/\.figma-nav-links/);
   assert.match(styles,/\.home-hero-description/);
   assert.match(styles,/\.home-hero-actions/);
   assert.match(app,/select\('theme','ธีม'/);
