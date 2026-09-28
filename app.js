@@ -324,7 +324,7 @@ function lenderOverviewView(own,bookings,summary){
     partnerPageHead('ภาพรวม',`ยินดีต้อนรับกลับ ${user(me()).name}`,false),
     h('div',{class:'partner-overview-grid'},
       h('div',{class:'partner-overview-left'},
-        h('article',{class:'consignment-card'},h('div',{},h('span',{class:'partner-kicker'},'CONSIGNMENT CARE'),h('h2',{},'ส่งชุดเข้าคลังกลาง'),h('p',{},'ให้ทีม TooSueaPha ดูแลตั้งแต่ตรวจสภาพ จัดเก็บ ไปจนถึงจัดส่ง')),h('ol',{},h('li',{},h('b',{},'01'),'ส่งชุดเข้าคลัง'),h('li',{},h('b',{},'02'),'ตรวจและดูแล'),h('li',{},h('b',{},'03'),'พร้อมให้เช่า')),button('ส่งชุดเข้าคลัง',()=>openCosplayListing(ctx),'partner-light')),
+        h('article',{class:'consignment-card'},h('div',{},h('span',{class:'partner-kicker'},'CONSIGNMENT CARE'),h('h2',{},'ส่งชุดเข้าคลังกลาง'),h('p',{},'ให้ทีม TooSuePha ดูแลตั้งแต่ตรวจสภาพ จัดเก็บ ไปจนถึงจัดส่ง')),h('ol',{},h('li',{},h('b',{},'01'),'ส่งชุดเข้าคลัง'),h('li',{},h('b',{},'02'),'ตรวจและดูแล'),h('li',{},h('b',{},'03'),'พร้อมให้เช่า')),button('ส่งชุดเข้าคลัง',()=>openCosplayListing(ctx),'partner-light')),
         h('section',{class:'popular-list'},h('div',{class:'partner-section-title'},h('div',{},h('h2',{},'ชุดยอดนิยมที่มีความต้องการเช่าสูง'),h('p',{},'ดูความเคลื่อนไหวของชุดในคลังคุณ')),h('a',{href:'#closet/listings'},'ดูทั้งหมด →')),...(popular.length?popular.map((item,index)=>h('article',{},h('span',{class:'popular-rank'},String(index+1).padStart(2,'0')),h('img',{src:photoUrl(cover(item)),alt:''}),h('div',{},h('b',{},item.title),h('small',{},`${item.character} · ${item.sizeVariants.map(v=>v.size).join(', ')}`)),h('strong',{},`${listingRentalSchedule(state,me(),item.id).length} การจอง`))):[note('ยังไม่มีชุดในคลัง')]))
       ),
       h('aside',{class:'partner-overview-right'},
