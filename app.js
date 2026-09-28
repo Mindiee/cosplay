@@ -7,6 +7,7 @@ import {createStudioUI} from './studio-ui.js';
 import {rentalBalance,rentalDays,rentalRangesOverlap} from './cosplay-domain.js';
 import {filterMarketplaceListings,marketplaceThemes} from './marketplace-filter.js';
 import {OCCASION_CATEGORIES,OCCASION_LABELS} from './occasion-domain.js';
+import {rentalFitSummary,rentalPhase,rentalTimeline,rentalUrgency,renterNextAction} from './rental-presenter.js';
 
 const $=id=>document.getElementById(id);
 const DISCLAIMER='Virtual preview is an estimation and does not guarantee actual fit.';
@@ -69,7 +70,7 @@ function render(){
   clearHeroStudio();
   if(inStudio){if(!mixStudio)mixStudio=createStudioUI({...ctx,get state(){return state},rental:openRental,accounts:()=>openAccounts(ctx)},studioCatalog,studioCatalogError);else mixStudio.update(state);if($('page').firstChild!==mixStudio.element)$('page').replaceChildren(mixStudio.element);const routeKey=id?`${id}/${routeVariant||''}`:'';if(routeKey&&routeKey!==studioRouteApplied){studioRouteApplied=routeKey;task(()=>mixStudio.wearItem(id,routeVariant));}if(!routeKey)studioRouteApplied='';return;}
   studioRouteApplied='';
-  const view=route==='shop'?marketplace():route==='product'?productPage(id):route==='tryon'?tryOnPage(id):route==='rentals'?rentalsPage():route==='saved'?savedPage():route==='closet'?closetPage(id||'listings'):route==='rental'?confirmationPage(id):homePage();
+  const view=route==='shop'?marketplace():route==='product'?productPage(id):route==='tryon'?tryOnPage(id):route==='rentals'?rentalsPage():route==='saved'?savedPage():route==='closet'?closetPage(id||'listings'):route==='rental'?rentalDetailPage(id):homePage();
   $('page').replaceChildren(view);
 }
 
@@ -214,12 +215,30 @@ function rentalLine(booking,{sellerView=false}={}){
   const items=booking.items||[{size:booking.size,dailyPrice:booking.dailyPrice,lineTotal:booking.totalPrice,listingSnapshot:booking.listingSnapshot}],first=items[0],snapshot=first.listingSnapshot;
   return h('article',{class:'cosplay-order rental-card'},h('img',{src:photoUrl(snapshot.image),alt:snapshot.title}),h('div',{class:'rental-card-copy'},h('small',{},`#${booking.id.slice(-8)} · ${dt(booking.createdAt)}`),h('h3',{},items.map(row=>`${row.listingSnapshot.character} — ${row.listingSnapshot.title}`).join(' + ')),note(items.map(row=>`ไซซ์ ${row.size} · ${money(row.dailyPrice)} / วัน`).join(' · ')),note(`${rentalDate(booking.pickupDate)} ถึง ${rentalDate(booking.returnDate)} · ${booking.rentalDays} วัน · รวม ${money(booking.totalPrice)}`),booking.tracking?.outbound?note(`ขาไป ${booking.tracking.outbound.carrier} · ${booking.tracking.outbound.trackingNumber}`):null,booking.tracking?.return?note(`ขากลับ ${booking.tracking.return.carrier} · ${booking.tracking.return.trackingNumber}`):null),actions);
 }
-function confirmationPage(id){const booking=state.rentals.find(row=>row.id===id&&row.renterId===me());if(!booking)return empty('ไม่พบ Booking','เลือกบัญชีผู้เช่าเพื่อดูรายการ');return h('section',{class:'page-shell order-confirmation'},h('span',{class:'confirmation-icon'},'✓'),heading('BOOKING CREATED','จองและชำระจำลองแล้ว','ร้านเห็น Booking และเริ่มเตรียมส่งได้ทันที'),rentalLine(booking),h('a',{class:'dark',href:'#rentals'},'ดู My Rentals'),h('a',{class:'secondary',href:'#shop'},'เลือกชุดอื่นต่อ'))}
+const rentalItems=booking=>booking.items||[{size:booking.size,dailyPrice:booking.dailyPrice,lineTotal:booking.totalPrice,listingSnapshot:booking.listingSnapshot}];
+function runRenterAction(booking,descriptor){if(!descriptor)return;if(descriptor.tracking)return trackingDialog(booking,descriptor.tracking);return run(descriptor.action,{id:booking.id})}
+function rentalOverviewCard(booking){
+  const items=rentalItems(booking),first=items[0],snapshot=first.listingSnapshot||{},action=renterNextAction(booking,me()),urgency=rentalUrgency(booking);
+  return h('article',{class:`rental-overview-card phase-${rentalPhase(booking)}`},
+    h('img',{src:photoUrl(snapshot.image),alt:snapshot.title||'ชุดเช่า'}),
+    h('div',{class:'rental-overview-copy'},h('div',{class:'rental-card-top'},h('small',{},`BOOKING #${booking.id.slice(-8)}`),h('span',{class:`rental-status ${booking.status}`},RENTAL_STATUS[booking.status]||booking.status)),h('h3',{},items.map(row=>row.listingSnapshot?.title||'ชุดเช่า').join(' + ')),h('div',{class:'rental-date-band'},h('span',{},'วันรับ',h('b',{},rentalDate(booking.pickupDate))),h('span',{},'วันคืน',h('b',{},rentalDate(booking.returnDate))),h('span',{},`${booking.rentalDays} วัน`,h('b',{},money(booking.totalPrice)))),h('p',{class:`rental-urgency ${urgency.key}`},urgency.label)),
+    h('div',{class:'rental-overview-actions'},action?button(action.label,()=>runRenterAction(booking,action),action.kind==='primary'?'dark':'secondary'):note('ยังไม่มีสิ่งที่ต้องทำ'),h('a',{class:'secondary',href:`#rental/${booking.id}`},'ดูรายละเอียด')));
+}
+function timelineBlock(title,rows){return h('section',{class:'rental-timeline'},h('h3',{},title),h('ol',{},...rows.map(row=>h('li',{class:row.state,'aria-current':row.state==='current'?'step':null},h('span',{},row.state==='done'?'✓':row.state==='current'?'●':'○'),h('b',{},row.label)))))}
+function rentalDetailPage(id){
+  const booking=state.rentals.find(row=>row.id===id&&row.renterId===me());if(!booking)return h('section',{class:'page-shell'},empty('ไม่พบ Booking','เลือกบัญชีผู้เช่าที่สร้างรายการนี้'));
+  const items=rentalItems(booking),timeline=rentalTimeline(booking),action=renterNextAction(booking,me()),fit=rentalFitSummary(booking,bodyForFit());
+  const itemCard=h('section',{class:'rental-detail-card'},h('div',{class:'rental-card-top'},h('h2',{},'รายการที่เช่า'),h('span',{class:`rental-status ${booking.status}`},RENTAL_STATUS[booking.status]||booking.status)),...items.map(row=>h('article',{class:'rental-detail-item'},h('img',{src:photoUrl(row.listingSnapshot?.image),alt:row.listingSnapshot?.title||''}),h('div',{},h('b',{},row.listingSnapshot?.title||'ชุดเช่า'),note(`ไซซ์ ${row.size} · ${money(row.dailyPrice)} / วัน`)),h('strong',{},money(row.lineTotal||booking.totalPrice)))));
+  const trackingCard=h('section',{class:'rental-detail-card'},h('h2',{},'Tracking'),h('div',{class:'tracking-grid'},h('div',{},h('small',{},'ขาไป'),h('b',{},booking.tracking?.outbound?.trackingNumber||'ยังไม่มีเลขติดตาม'),note(booking.tracking?.outbound?.carrier||'รอร้านส่งชุด')),h('div',{},h('small',{},'ขากลับ'),h('b',{},booking.tracking?.return?.trackingNumber||'ยังไม่มีเลขติดตาม'),note(booking.tracking?.return?.carrier||'ยังไม่เริ่มส่งคืน'))));
+  const summaryCard=h('section',{class:'rental-detail-card'},h('h2',{},'สรุปการเช่า'),h('dl',{class:'rental-summary-list'},h('div',{},h('dt',{},'วันรับ'),h('dd',{},rentalDate(booking.pickupDate))),h('div',{},h('dt',{},'วันคืน'),h('dd',{},rentalDate(booking.returnDate))),h('div',{},h('dt',{},'ระยะเวลา'),h('dd',{},`${booking.rentalDays} วัน`)),h('div',{},h('dt',{},'ยอดรวม'),h('dd',{},money(booking.totalPrice)))),h('div',{class:'mock-state-row'},h('span',{class:'payment-pill'},`Mock Payment · ${booking.paymentStatus||'ข้อมูลเดิม'}`),h('span',{class:'payment-pill'},`Mock Escrow · ${booking.escrowStatus||'ข้อมูลเดิม'}`)),action?button(action.label,()=>runRenterAction(booking,action),action.kind==='primary'?'dark full':'secondary full'):note('ยังไม่มีสิ่งที่ต้องทำตอนนี้'));
+  const fitCard=h('section',{class:'rental-detail-card'},h('h2',{},'Fit Match'),fit?h('div',{class:'rental-fit-detail'},h('strong',{},`${fit.score}%`),h('div',{},...fit.items.map(row=>note(`${row.title} · ไซซ์ ${row.size} · ${row.score}%`)))):note('ยังประเมินไม่ได้ — ต้องมีสัดส่วนหุ่นและขนาดชุดครบ'),h('p',{class:'disclaimer'},'Fit Match เป็นคะแนนเทียบขนาดเดโม ไม่รับประกันความพอดีจริง'));
+  return h('section',{class:'page-shell rental-detail-page'},h('a',{class:'back-link',href:'#rentals'},'← My Rentals'),heading('RENTAL DETAIL',`Booking #${booking.id.slice(-8)}`,'ข้อมูลรับชุด ใช้งาน และคืนชุดอยู่ในหน้าเดียว'),h('div',{class:'rental-detail-grid'},h('div',{class:'rental-detail-main'},itemCard,h('div',{class:'rental-timeline-grid'},timelineBlock('ขั้นตอนรับชุด',timeline.receive),timelineBlock('ขั้นตอนคืนชุด',timeline.return)),trackingCard),h('aside',{class:'rental-detail-side'},summaryCard,fitCard)));
+}
 
 function rentalsPage(){
   if(!me())return h('section',{class:'page-shell'},heading('MY RENTALS','รายการเช่าของคุณ','ติดตามวันเช่า ราคา และสถานะคำขอ'),button('เลือกบัญชีเดโม',()=>openAccounts(ctx),'dark'));
-  const rows=state.rentals.filter(row=>row.renterId===me()).sort((a,b)=>b.createdAt-a.createdAt);
-  return h('section',{class:'page-shell'},heading('MY RENTALS','รายการเช่าของคุณ','ดูเส้นทางรับชุด ใช้งาน และส่งคืน พร้อม Next Action ของแต่ละ Booking'),h('div',{class:'stack'},...(rows.length?rows.map(row=>rentalLine(row)):[empty('ยังไม่มีรายการเช่า','เลือกหลายชุดจาก Marketplace แล้วชำระจำลองพร้อมกัน')])));
+  const rows=state.rentals.filter(row=>row.renterId===me()).sort((a,b)=>b.createdAt-a.createdAt),active=rows.filter(row=>!['completed','cancelled'].includes(row.status)),history=rows.filter(row=>['completed','cancelled'].includes(row.status));
+  return h('section',{class:'page-shell rentals-page'},heading('MY RENTALS','รายการเช่าของคุณ','ดูสถานะ วันรับ–คืน และสิ่งที่ต้องทำต่อในทันที'),rows.length?h('div',{class:'rental-sections'},active.length?h('section',{},h('div',{class:'rental-section-head'},h('h2',{},'กำลังเช่าและต้องดำเนินการ'),h('span',{},`${active.length} Booking`)),h('div',{class:'rental-overview-list'},...active.map(rentalOverviewCard))):null,history.length?h('section',{},h('div',{class:'rental-section-head'},h('h2',{},'ประวัติการเช่า'),h('span',{},`${history.length} Booking`)),h('div',{class:'rental-overview-list history'},...history.map(rentalOverviewCard))):null):empty('ยังไม่มีรายการเช่า','เลือกหลายชุดจาก Marketplace แล้วชำระจำลองพร้อมกัน'));
 }
 
 function savedPage(){

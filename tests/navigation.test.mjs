@@ -83,3 +83,22 @@ test('Home hero reuses the Studio renderer and Marketplace exposes occasion and 
   assert.match(heroStudio,/profileStudio/);
   assert.doesNotMatch(heroStudio,/\.glb['"]/);
 });
+
+test('My Rentals has overview history and one booking detail route for receive and return',async()=>{
+  const [app,styles]=await Promise.all([
+    readFile(new URL('app.js',root),'utf8'),
+    readFile(new URL('toosuepha.css',root),'utf8'),
+  ]);
+  assert.match(app,/function rentalDetailPage\(/);
+  assert.match(app,/route==='rental'\?rentalDetailPage\(id\)/);
+  assert.match(app,/กำลังเช่าและต้องดำเนินการ/);
+  assert.match(app,/ประวัติการเช่า/);
+  assert.match(app,/ขั้นตอนรับชุด/);
+  assert.match(app,/ขั้นตอนคืนชุด/);
+  assert.match(app,/Mock Payment/);
+  assert.match(app,/Mock Escrow/);
+  assert.doesNotMatch(app,/#(?:receive|return)\//);
+  assert.match(styles,/\.rental-overview-card/);
+  assert.match(styles,/\.rental-timeline/);
+  assert.match(styles,/\.rental-detail-grid/);
+});

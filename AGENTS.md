@@ -32,9 +32,11 @@
 - `repository.js`: IndexedDB access and persistence boundaries.
 - `cosplay-domain.js` and `domain.js`: rental, legacy purchase, listing and account rules.
 - `mannequin.js`: mannequin dimensions and fit calculation.
+- `rental-presenter.js`: pure renter phase, timeline, urgency, next-action and snapshot Fit Match selectors.
 - `studio-ui.js`, `studio-renderer.js`, `studio-domain.js`: 3D Studio UI, Three.js rendering and slot rules.
 - `cosplay-seed.js` and `studio-catalog.json`: versioned demo catalog.
 - `tests/`: behavioral regression tests.
+- `#rentals` is the renter overview and `#rental/:id` is its single receive/return detail route; do not create separate receive or return pages.
 - `Closet-handoff.md` and `IMPLEMENTATION-REPORT.md`: detailed project history and delivery notes.
 
 ## Delivery

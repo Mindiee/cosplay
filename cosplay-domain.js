@@ -118,7 +118,7 @@ export function transitionCosplay(state,action,payload={},now=Date.now(),actorId
       if(validateCosplayListing(item).length||!state.profiles.some(p=>p.id===item.sellerId))fail('ข้อมูลสินค้าไม่ถูกต้อง');
       if(conflicts(state,item.id,variant.id,bag.pickupDate,bag.returnDate))fail(`${item.title} ไซซ์ ${variant.size} ไม่ว่างในวันที่เลือก`);
       const seller=state.profiles.find(p=>p.id===item.sellerId),dailyPrice=variant.price;
-      return {listingId:item.id,variantId:variant.id,size:variant.size,dailyPrice,lineTotal:dailyPrice*days,listingSnapshot:{title:item.title,character:item.character,image:structuredClone(item.photos.find(p=>p.id===item.coverId)),sellerName:seller.name,condition:item.condition,measurements:structuredClone(variant.measurements)}};
+      return {listingId:item.id,variantId:variant.id,size:variant.size,dailyPrice,lineTotal:dailyPrice*days,listingSnapshot:{title:item.title,character:item.character,image:structuredClone(item.photos.find(p=>p.id===item.coverId)),sellerName:seller.name,condition:item.condition,category:item.category||item.attachmentSlot||'',lengthTarget:item.lengthTarget||'',measurements:structuredClone(variant.measurements)}};
     });
     const groupId=uid('checkout',now),groups=new Map();
     for(const row of prepared){const item=find(row.listingId);if(!groups.has(item.sellerId))groups.set(item.sellerId,[]);groups.get(item.sellerId).push(row);}

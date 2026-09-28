@@ -25,6 +25,12 @@ test('mock checkout creates one group, splits paid bookings by seller, and clear
   assert.deepEqual(new Set(state.rentals.map(row=>row.sellerId)),new Set([first.sellerId,second.sellerId]));
   assert.ok(state.rentals.every(row=>row.status==='paid'&&row.paymentStatus==='paid'&&row.escrowStatus==='held'));
   assert.ok(state.rentals.every(row=>row.items.length===1&&row.rentalDays===3));
+  const snapshot=state.rentals[0].items[0].listingSnapshot,source=state.listings.find(row=>row.id===state.rentals[0].items[0].listingId);
+  assert.equal(snapshot.category,source.category||source.attachmentSlot||'');
+  assert.equal(snapshot.lengthTarget,source.lengthTarget||'');
+  assert.deepEqual(snapshot.measurements,source.sizeVariants.find(row=>row.id===state.rentals[0].items[0].variantId).measurements);
+  const originalChest=snapshot.measurements.chest;source.sizeVariants[0].measurements.chest+=20;
+  assert.equal(snapshot.measurements.chest,originalChest);
   assert.equal(state.payments[0].amount,state.rentals.reduce((sum,row)=>sum+row.totalPrice,0));
   assert.deepEqual(state.rentalBags.u1.items,[]);
 });
