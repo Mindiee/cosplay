@@ -64,24 +64,28 @@ test('TooSuePha navigation separates home, marketplace, Studio, rentals and lend
   assert.match(styles,/@media\(max-width:760px\)/);
 });
 
-test('Home hero reuses the Studio renderer and Marketplace exposes occasion and piece filters',async()=>{
-  const [app,heroStudio]=await Promise.all([
+test('Home hero matches the supplied Figma content while Marketplace keeps its filters',async()=>{
+  const [app,styles]=await Promise.all([
     readFile(new URL('app.js',root),'utf8'),
-    readFile(new URL('hero-studio.js',root),'utf8'),
+    readFile(new URL('toosuepha.css',root),'utf8'),
   ]);
-  assert.match(app,/import\('\.\/hero-studio\.js'\)/);
   assert.match(app,/function homePage\(\)/);
-  assert.match(app,/เสื้อผ้าสำหรับทุกโอกาสของคุณ/);
-  assert.match(app,/เลือกชุดที่ใช่ ส่งต่อชุดที่มี/);
-  assert.match(app,/class:'cosplay-hero-art studio-hero'/);
-  assert.doesNotMatch(app,/class:'cosplay-hero-art',href:`#tryon\/\$\{hero\.id\}`/);
+  assert.match(app,/Find what fits\./);
+  assert.match(app,/Rent what you need\./);
+  assert.match(app,/ตู้เสื้อผ้า/);
+  assert.match(app,/สำหรับทุกโอกาส เช็กความพอดีและลองก่อนเช่า/);
+  assert.match(app,/class:'home-hero-copy'/);
+  assert.match(app,/class:'home-hero-actions'/);
+  assert.match(app,/href:'#shop'/);
+  assert.match(app,/href:'#studio'/);
+  assert.doesNotMatch(app,/mountHeroStudio\(heroHost,heroStatus\)/);
+  assert.match(styles,/\.home-hero-title/);
+  assert.match(styles,/\.home-hero-description/);
+  assert.match(styles,/\.home-hero-actions/);
   assert.match(app,/select\('theme','ธีม'/);
   assert.match(app,/select\('type','ชนิด'/);
   assert.match(app,/class:'occasion-chips'/);
   assert.match(app,/filters\.occasion=key/);
-  assert.match(heroStudio,/from '\.\/studio-renderer\.js'/);
-  assert.match(heroStudio,/profileStudio/);
-  assert.doesNotMatch(heroStudio,/\.glb['"]/);
 });
 
 test('My Rentals has overview history and one booking detail route for receive and return',async()=>{

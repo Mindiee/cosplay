@@ -85,17 +85,16 @@ function card(l){
 
 function homePage(){
   let active=2;
-  const heroHost=h('div',{class:'hero-studio-viewport'}),heroStatus=h('small',{class:'hero-studio-status'},'กำลังเปิดหุ่น 3D…'),track=h('div',{class:'occasion-track'});
+  const track=h('div',{class:'occasion-track'});
   const draw=()=>track.replaceChildren(...OCCASION_CATEGORIES.map((key,index)=>{const label=OCCASION_LABELS[key];return h('button',{type:'button',class:`occasion-card ${index===active?'active':''}`,style:`--distance:${Math.abs(index-active)}`,onclick:()=>{if(index===active){filters.occasion=key;go('#shop');return}active=index;draw()},'aria-pressed':String(index===active)},h('img',{src:`toosuepha-assets/${key}.jpg`,alt:''}),h('span',{},h('strong',{},label.title),h('small',{},label.subtitle),h('small',{},index===active?'เลือกหมวดนี้ →':'เลื่อนมาตรงกลาง')))}));
   draw();const root=h('div',{class:'home-page'},
-    h('section',{class:'hero cosplay-hero home-hero'},h('div',{},h('p',{class:'eyebrow'},'TOOSUEPHA · RENTAL MARKETPLACE'),h('h1',{},'เสื้อผ้าสำหรับ',h('em',{},'ทุกโอกาสของคุณ')),note('เลือกชุดที่ใช่ ส่งต่อชุดที่มี'),h('div',{class:'row'},h('a',{class:'secondary',href:'#shop'},'ค้นหาชุด'),h('a',{class:'dark',href:'#studio'},'พร้อมสร้างหุ่นจำลอง')),h('p',{class:'hero-footnote'},'FIT MATCH · 3D TRY-ON · RENTAL ONLY')),
-      h('div',{class:'cosplay-hero-art studio-hero'},heroHost,h('div',{class:'hero-studio-copy'},heroStatus,h('a',{class:'hero-caption',href:'#studio'},'3D STUDIO',h('small',{},'ลากเพื่อหมุน · เปิด Studio ↗'))))),
+    h('section',{class:'home-hero'},h('div',{class:'home-hero-copy'},h('h1',{class:'home-hero-title'},h('span',{},'Find what fits.'),h('strong',{},'Rent what you need.')),h('p',{class:'home-hero-description'},h('strong',{},'ตู้เสื้อผ้า'),'สำหรับทุกโอกาส เช็กความพอดีและลองก่อนเช่า'),h('div',{class:'home-hero-actions'},h('a',{class:'hero-button hero-button-light',href:'#shop'},h('span',{class:'hero-button-icon hero-search-icon','aria-hidden':'true'}),'ค้นหาชุด'),h('a',{class:'hero-button hero-button-dark',href:'#studio'},h('span',{class:'hero-button-icon hero-person-icon','aria-hidden':'true'}),'ลองชุดของฉัน')))),
     h('section',{class:'occasion-section'},h('p',{class:'eyebrow'},'DRESS FOR THE MOMENT'),h('h2',{},'เสื้อผ้าสำหรับทุกโอกาสของคุณ'),note('เลือกการใช้งาน แล้วค้นหาชุดที่พร้อมให้เช่า'),h('div',{class:'occasion-carousel'},button('←',()=>{active=(active-1+OCCASION_CATEGORIES.length)%OCCASION_CATEGORIES.length;draw()},'carousel-arrow',{'aria-label':'หมวดก่อนหน้า'}),track,button('→',()=>{active=(active+1)%OCCASION_CATEGORIES.length;draw()},'carousel-arrow',{'aria-label':'หมวดถัดไป'}))),
     h('section',{class:'home-message'},h('p',{},'“ ชุดนี้พอดีกับเราไหม? ”'),note('ดูสัดส่วนและลองบนหุ่น 3D ก่อนตัดสินใจเช่า')),
     h('section',{class:'home-steps'},h('header',{},h('h2',{},'จากสัดส่วนสู่ชุดที่เหมาะกับคุณ ช่วยให้ตัดสินใจเช่าได้ง่ายขึ้น'),note('ค้นหา เทียบขนาด และลองสวมในเส้นทางเดียว')), ...['01 Discover','02 Match & Try','03 Decide'].map((title,index)=>h('article',{},h('small',{},`0${index+1}`),h('h3',{},title),note(['ค้นหาเสื้อผ้าจากหมวดและช่วงวันที่','เทียบขนาดและลองบนหุ่น 3D','เลือกวันและยืนยันการเช่า'][index])))),
     h('section',{class:'home-choice'},h('h2',{},'เลือกชุดที่ใช่ ส่งต่อชุดที่มี'),note('ให้ทุกชุดได้หมุนเวียนใช้งานในโอกาสใหม่'),h('div',{class:'mode-switch home-mode'},h('a',{href:'#shop'},'เช่า'),h('a',{href:'#closet/listings'},'ปล่อยเช่า')),h('div',{class:'choice-copy'},h('p',{},'Find what fits.',h('br'),'Rent what you need.'),h('p',{},'List what you own.',h('br'),"Earn from what you don't wear."))),
     h('section',{class:'home-studio-cta'},h('div',{},h('h2',{},'พร้อมสร้างหุ่นจำลอง 3D ของคุณแล้วหรือยัง?'),note('ตั้งสัดส่วน เลือกหุ่น และลองชิ้นส่วนจริงจาก Marketplace'),h('div',{class:'row'},h('a',{class:'dark',href:'#studio'},'สร้างหุ่นของฉันใน 3D Studio'),h('a',{class:'secondary',href:'#shop'},'ค้นหาชุด')))));
-  mountHeroStudio(heroHost,heroStatus);return root;
+  return root;
 }
 
 function marketplace(){
