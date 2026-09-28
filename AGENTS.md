@@ -1,4 +1,4 @@
-﻿# CLOSET Cosplay Marketplace - Agent Guide
+# TooSuePha Rental Marketplace - Agent Guide
 
 ## Stack
 - Plain HTML, CSS and JavaScript modules.
@@ -9,12 +9,12 @@
 ## Product rules
 - Listings have independent size variants, measurements, daily rental prices and availability flags.
 - Rental price is stored in `sizeVariants[].price` and displayed per day.
-- Rental bookings live in `state.rentals`; preserve `state.orders` as legacy history.
-- Only confirmed inclusive date ranges block the same listing and variant.
-- Keep rental creation, seller confirmation and completion inside existing IndexedDB transactions.
-- Rental status follows `pending` → `confirmed` → `completed`; only the listing seller can advance it.
+- Rental checkout groups live in `state.rentalCheckoutGroups`; paid bookings live in `state.rentals`; preserve `state.orders` as legacy history.
+- Paid inclusive date ranges block the same listing and variant. Checkout validates every item and commits the group, bookings, mock payment and escrow atomically.
+- Keep checkout, booking lifecycle, tracking, cancellation, mock refund and escrow release inside existing IndexedDB transactions.
+- Rental status follows the receive and return lifecycle in `cosplay-domain.js`; enforce renter and lender actions for every transition.
 - Keep one account model for both roles. `#rentals` is renter history; `#closet/listings` and `#closet/requests` are the owner workspace; `#saved` is independent.
-- Keep legacy Closet data separate from cosplay data.
+- Keep legacy Closet data separate from TooSuePha rental data and preserve stable storage keys.
 - Preserve realistic male and female mannequins and independent top, bottom, wig, footwear and accessory slots.
 - Product photos represent real items. 3D garments are visual approximations.
 - Always display the virtual-fit limitation notice.
@@ -28,7 +28,7 @@
 5. Make focused commits and never force-push.
 
 ## File map
-- `app.js` and `panels.js`: application shell, routing and marketplace panels.
+- `app.js` and `panels.js`: application shell, routing and marketplace panels. `index.html` loads only `toosuepha.css`; keep SVG parity rules there and do not re-enable legacy stylesheets.
 - `repository.js`: IndexedDB access and persistence boundaries.
 - `cosplay-domain.js` and `domain.js`: rental, legacy purchase, listing and account rules.
 - `mannequin.js`: mannequin dimensions and fit calculation.

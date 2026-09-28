@@ -22,8 +22,13 @@ export function filterMarketplaceListings(listings,filters={}){
     if(filters.type&&marketplaceType(item)!==filters.type)return false;
     if(filters.condition&&item.condition!==filters.condition)return false;
     if(query&&![item.character,item.title,item.series,item.description].join(' ').toLocaleLowerCase().includes(query))return false;
-    return variants.some(variant=>(!filters.size||variant.size===filters.size)&&(!Number.isFinite(ceiling)||variant.price<=ceiling));
-  }).sort((a,b)=>filters.sort==='price'
-    ?Math.min(...activePriceRows(a).map(v=>v.price))-Math.min(...activePriceRows(b).map(v=>v.price))
-    :(b.publishedAt||0)-(a.publishedAt||0));
+    return variants.some(variant=>(!filters.size||variant.size===filters.size)&&(!Number.isFinite(ceiling)||variant.price<=ceiling)&&(!(filters.availableVariantIds instanceof Set)||filters.availableVariantIds.has(`${item.id}:${variant.id}`)));
+  }).sort((a,b)=>{
+    if(filters.sort==='price')return Math.min(...activePriceRows(a).map(v=>v.price))-Math.min(...activePriceRows(b).map(v=>v.price));
+    if(filters.sort==='fit'){
+      const left=Number.isFinite(filters.fitScores?.[a.id])?filters.fitScores[a.id]:-1,right=Number.isFinite(filters.fitScores?.[b.id])?filters.fitScores[b.id]:-1;
+      if(left!==right)return right-left;
+    }
+    return (b.publishedAt||0)-(a.publishedAt||0);
+  });
 }

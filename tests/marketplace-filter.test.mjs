@@ -33,3 +33,10 @@ test('full costume listings without a piece type remain available under All',()=
 test('returns the unique available themes in label order',()=>{
   assert.deepEqual(marketplaceThemes(listings),['academy','fantasy','gothic']);
 });
+
+test('Fit Match sorting puts unknown scores last and date availability keeps only open variants',()=>{
+  const fitScores={top:75,wig:null,mask:100,set:null};
+  assert.deepEqual(filterMarketplaceListings(listings,{sort:'fit',fitScores}).map(x=>x.id),['mask','top','set','wig']);
+  const availableVariantIds=new Set(['top:M-120','set:M-200']);
+  assert.deepEqual(filterMarketplaceListings(listings,{availableVariantIds}).map(x=>x.id),['set','top']);
+});

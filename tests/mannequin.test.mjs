@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {PRESETS,BODY_LIMITS,validateBody,calculateFit,bodyGeometry,garmentGeometry} from '../mannequin.js';
+import {PRESETS,BODY_LIMITS,validateBody,calculateFit,calculateFitMatch,bodyGeometry,garmentGeometry} from '../mannequin.js';
 
 test('every body field validates finite numeric limits including boundaries',()=>{
   for(const [key,[min,max]]of Object.entries(BODY_LIMITS)){
@@ -42,4 +42,19 @@ test('garment widths and length scale independently, without body input',()=>{
     assert.equal(result[key],1.2);
     for(const other of Object.keys(reference).filter(k=>k!==key))assert.equal(result[other],1);
   }
+});
+
+test('Fit Match uses required measurements, status weights, and the Tight score cap',()=>{
+  const top={category:'top',lengthTarget:'waist'},bottom={category:'bottom',lengthTarget:'ankle'},set={lengthTarget:'knee'};
+  const perfect={measurements:{shoulder:40,chest:90,waist:72,hip:96,length:165*.52}};
+  assert.equal(calculateFitMatch(PRESETS.Regular,top,perfect).score,100);
+  assert.equal(calculateFitMatch(PRESETS.Regular,bottom,{measurements:{waist:78,hip:108,length:165*.76}}).score,92);
+  assert.equal(calculateFitMatch(PRESETS.Regular,set,{measurements:{shoulder:39,chest:89,waist:71,hip:95,length:165*.52}}).score,36);
+  assert.equal(calculateFitMatch(PRESETS.Regular,top,{measurements:{shoulder:39,chest:102,waist:84}}).score,49);
+});
+
+test('Fit Match is unavailable for unsaved or incomplete measurements and accessories',()=>{
+  assert.equal(calculateFitMatch(null,{category:'top'},{measurements:{shoulder:40,chest:90,waist:72}}),null);
+  assert.equal(calculateFitMatch(PRESETS.Regular,{category:'top'},{measurements:{shoulder:40,chest:90}}),null);
+  assert.equal(calculateFitMatch(PRESETS.Regular,{category:'wig'},{measurements:{shoulder:40,chest:90,waist:72}}),null);
 });

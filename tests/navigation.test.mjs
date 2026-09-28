@@ -15,7 +15,7 @@ test('standalone My Mannequin navigation is removed while 3D Studio stays availa
   assert.doesNotMatch(app, /route\s*===\s*["']mannequin["']/);
   assert.doesNotMatch(app, /mannequin\s*:\s*["']My Mannequin["']/);
 
-  assert.match(html, /href=["']#studio["']>3D Studio</);
+  assert.match(html, /href=["']#studio["'][^>]*>เปิด 3D Studio/);
   assert.match(app, /createStudioUI\(/);
   assert.match(app, /route\s*===\s*["']studio["']/);
 });
@@ -26,14 +26,17 @@ test('TooSuePha navigation separates home, marketplace, Studio, rentals and lend
     readFile(new URL('app.js',root),'utf8'),
     readFile(new URL('studio-ui.js',root),'utf8'),
     readFile(new URL('cosplay-seller.js',root),'utf8'),
-    readFile(new URL('styles.css',root),'utf8'),
+    readFile(new URL('toosuepha.css',root),'utf8'),
   ]);
   assert.match(app,/function openRental\(/);
-  assert.match(app,/rental\.create/);
+  assert.match(app,/rentalBag\.add/);
+  assert.match(app,/rental\.checkout/);
   assert.match(html,/<title>TooSuePha — Rental Marketplace<\/title>/);
   assert.match(html,/class="brand" href="#home"[^>]*>TooSuePha/);
-  assert.match(html,/<nav aria-label="เมนูหลัก"><a href="#shop">เช่า<\/a><a href="#studio">3D Studio<\/a><\/nav>/);
-  assert.match(html,/<div class="nav-actions"><button class="chip" id="accountBtn">บัญชีเดโม<\/button><a class="header-link" href="#rentals">My Rentals<\/a><a class="header-link" href="#saved">Saved<\/a><a class="header-link" href="#closet\/listings">My Closet<\/a><button class="dark" id="sellBtn">＋ ลงชุดให้เช่า<\/button><\/div>/);
+  assert.match(html,/<nav class="mode-switch"[^>]*><a href="#shop">เช่า<\/a><a href="#closet\/listings">ปล่อยเช่า<\/a><\/nav>/);
+  assert.match(html,/href="#rentals"[^>]*aria-label="My Rentals"/);
+  assert.match(html,/href="#saved"[^>]*aria-label="Saved"/);
+  assert.match(html,/href="#closet\/listings"[^>]*aria-label="My Closet"/);
   assert.match(app,/route==='rentals'\?rentalsPage\(\)/);
   assert.match(app,/route==='saved'\?savedPage\(\)/);
   assert.match(app,/href:'#rentals'/);
@@ -41,10 +44,12 @@ test('TooSuePha navigation separates home, marketplace, Studio, rentals and lend
   assert.match(app,/requests:'Rental Requests'/);
   assert.doesNotMatch(app,/tab==='rentals'|tab==='saved'/);
   assert.doesNotMatch(html,/#closet\/(?:rentals|saved)/);
-  assert.match(app,/rental\.confirm/);
-  assert.match(app,/rental\.complete/);
+  assert.match(html,/id="rentalBagBtn"/);
+  assert.match(app,/rental\.shipOutbound/);
+  assert.match(app,/rental\.shipReturn/);
+  assert.match(app,/ชำระจำลองแล้ว/);
   assert.match(app,/completed:'เสร็จสิ้น'/);
-  assert.match(app,/ปิดงานเช่า/);
+  assert.doesNotMatch(app,/ผู้ให้เช่าจะตรวจสอบและยืนยันคำขอ/);
   assert.doesNotMatch(app,/button\('Buy Now'/);
   assert.doesNotMatch(app,/purchases:'Purchases'/);
   assert.doesNotMatch(app,/sold:'Sold'/);
@@ -54,7 +59,9 @@ test('TooSuePha navigation separates home, marketplace, Studio, rentals and lend
   assert.doesNotMatch(studio,/ctx\.purchase|ซื้อชิ้นนี้/);
   assert.match(seller,/ราคาเช่าต่อวัน/);
   assert.match(html,/ลงชุดให้เช่า/);
-  assert.match(styles,/\.topbar nav\{display:flex;order:3;width:100%;flex:0 0 100%;[^}]*overflow-x:auto/);
+  assert.match(html,/rel="stylesheet" href="toosuepha\.css"/);
+  assert.doesNotMatch(html,/href="(?:styles|panels|cosplay|cosplay-seller|studio)\.css"/);
+  assert.match(styles,/@media\(max-width:760px\)/);
 });
 
 test('Home hero reuses the Studio renderer and Marketplace exposes occasion and piece filters',async()=>{
@@ -70,7 +77,8 @@ test('Home hero reuses the Studio renderer and Marketplace exposes occasion and 
   assert.doesNotMatch(app,/class:'cosplay-hero-art',href:`#tryon\/\$\{hero\.id\}`/);
   assert.match(app,/select\('theme','ธีม'/);
   assert.match(app,/select\('type','ชนิด'/);
-  assert.match(app,/select\('occasion','โอกาส'/);
+  assert.match(app,/class:'occasion-chips'/);
+  assert.match(app,/filters\.occasion=key/);
   assert.match(heroStudio,/from '\.\/studio-renderer\.js'/);
   assert.match(heroStudio,/profileStudio/);
   assert.doesNotMatch(heroStudio,/\.glb['"]/);

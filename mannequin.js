@@ -16,6 +16,18 @@ export function calculateFit(body,measurements={},lengthTarget){return ['shoulde
   const text={tight:'เล็กกว่าสัดส่วนหุ่น',good:'อยู่ในช่วงพอดีโดยประมาณ',slightly_loose:'หลวมเล็กน้อย',loose:'มีพื้นที่เผื่อค่อนข้างมาก',short:'สั้นกว่าจุดความยาวที่เลือก',long:'ยาวกว่าจุดความยาวที่เลือก'};
   return {key,label:labels[key],status,delta,explanation:`${text[status]} (${delta>0?'+':''}${delta} ซม.)${key==='length'?' · วัดจากไหล่':''}`};
 })}
+export function calculateFitMatch(body,listing,variant){
+  if(!body||validateBody(body).length)return null;
+  const type=listing?.category||listing?.attachmentSlot||'';
+  const required=type==='top'?['shoulder','chest','waist']:type==='bottom'?['waist','hip','length']:['wig','accessory','face','neck','hair'].includes(type)?[]:['shoulder','chest','waist','hip','length'];
+  if(!required.length)return null;
+  const rows=calculateFit(body,variant?.measurements,listing?.lengthTarget).filter(row=>required.includes(row.key));
+  if(rows.length!==required.length||rows.some(row=>row.status==='unknown'))return null;
+  const points={good:100,slightly_loose:75,loose:40,tight:20,short:40,long:40};
+  let score=Math.round(rows.reduce((sum,row)=>sum+points[row.status],0)/rows.length);
+  if(rows.some(row=>row.status==='tight'))score=Math.min(score,49);
+  return {score,rows,required};
+}
 
 // Circumference is mapped to a front silhouette, not a physical 3D simulation.
 export function bodyGeometry(body){
