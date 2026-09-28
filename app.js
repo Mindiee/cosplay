@@ -34,6 +34,19 @@ function availableVariantIds(){
 const note=text=>h('p',{class:'muted'},text);
 const field=(text,input)=>h('label',{class:'field'},h('span',{},text),input);
 const button=(text,fn,className='secondary',attrs={})=>h('button',{type:'button',class:className,...attrs,onclick:()=>task(fn)},text);
+const ICON_PATHS={
+  search:['M10.5 4.5a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z','m15 15 5 5'],
+  mannequin:['M12 3.5a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6Z','M12 7.2v13.3M5.8 10.7 12 8.3l6.2 2.4M8.8 21 12 15l3.2 6'],
+  scanCube:['M7 3H5a2 2 0 0 0-2 2v2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2','m12 7 5 3-5 3-5-3 5-3Z','m7 10 5 3 5-3M7 10v5l5 3 5-3v-5M12 13v5'],
+  ruler:['M3 7h18v10H3z','M7 7v4M11 7v2M15 7v4M19 7v2'],
+  bag:['M5 8h14v12H5z','M9 8V6a3 3 0 0 1 6 0v2'],
+  userPlus:['M15 20.5a6 6 0 0 0-12 0','M9 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z','M18 7v6M15 10h6'],
+  arrowRight:['M5 12h14','m14 6 6 6-6 6'],
+  arrowLeft:['M19 12H5','m10 18-6-6 6-6'],
+  chevronRight:['m9 18 6-6-6-6'],
+  chevronLeft:['m15 18-6-6 6-6']
+};
+function uiIcon(name,className='ui-icon'){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('class',className);svg.setAttribute('aria-hidden','true');for(const d of ICON_PATHS[name]||[]){const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',d);svg.append(path)}return svg}
 
 function toast(text){$('toast').textContent=text;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3500)}
 function task(fn){return Promise.resolve().then(fn).catch(error=>{toast(error?.message||'ทำรายการไม่สำเร็จ');return null})}
@@ -88,17 +101,23 @@ function homePage(){
   const track=h('div',{class:'occasion-track'});
   const draw=()=>{track.style.setProperty('--active',active);track.replaceChildren(...OCCASION_CATEGORIES.map((key,index)=>{const label=OCCASION_LABELS[key];return h('button',{type:'button',class:`occasion-card ${index===active?'active':''}`,style:`--distance:${Math.abs(index-active)}`,onclick:()=>{if(index===active){filters.occasion=key;go('#shop');return}active=index;draw()},'aria-pressed':String(index===active)},h('img',{src:`toosuepha-assets/${key}.jpg`,alt:''}),h('span',{},h('strong',{},label.title),h('small',{},label.subtitle)))}))};
   const heroHost=h('div',{class:'hero-studio-viewport','aria-label':'หุ่นจำลอง 3D หมุนได้'}),heroStatus=h('span',{class:'hero-studio-status'},'กำลังเตรียมหุ่น 3D…');
-  draw();const root=h('div',{class:'home-page'},
-    h('section',{class:'home-hero'},h('div',{class:'home-hero-copy'},h('h1',{class:'home-hero-title'},h('span',{},'Find what fits.'),h('strong',{},'Rent what you need.')),h('p',{class:'home-hero-description'},h('strong',{},'ตู้เสื้อผ้า'),'สำหรับทุกโอกาส เช็กความพอดีและลองก่อนเช่า'),h('div',{class:'home-hero-actions'},h('a',{class:'hero-button hero-button-light',href:'#shop'},h('span',{class:'hero-button-icon hero-search-icon','aria-hidden':'true'}),'ค้นหาชุด'),h('a',{class:'hero-button hero-button-dark',href:'#studio'},h('span',{class:'hero-button-icon hero-person-icon','aria-hidden':'true'}),'ลองชุดของฉัน'))),h('div',{class:'studio-hero'},heroHost,h('div',{class:'hero-studio-copy'},heroStatus,h('a',{class:'hero-caption',href:'#studio'},h('b',{},'3D STUDIO'),h('small',{},'เปิดห้องลองชุด →'))))),
-    h('section',{class:'occasion-section'},h('h2',{},'เสื้อผ้าสำหรับทุกโอกาสของคุณ'),note('เลือกดูชุดตามโอกาส พร้อมระบบเทียบสัดส่วนและลองชุดบนหุ่น 3D ก่อนเช่า'),h('div',{class:'occasion-carousel'},button('←',()=>{active=(active-1+OCCASION_CATEGORIES.length)%OCCASION_CATEGORIES.length;draw()},'carousel-arrow',{'aria-label':'หมวดก่อนหน้า'}),track,button('→',()=>{active=(active+1)%OCCASION_CATEGORIES.length;draw()},'carousel-arrow',{'aria-label':'หมวดถัดไป'}))),
-    h('section',{class:'home-message'},h('p',{},'“ ชุดนี้จะพอดีกับเราไหม? ”'),h('em',{},'รูปสินค้าจริงอย่างเดียวบอกไม่ได้ว่าชุดจะพอดีกับเรา ผู้ใช้จึงต้องคาดเดาจาก Size Chart ก่อนเช่า'),h('span',{class:'home-message-mark'},'TOO',h('br'),'SUEA',h('br'),'PHA'),h('h3',{},'Too Suea Pha ช่วยให้คุณตัดสินใจได้ก่อนเช่า')),
-    h('section',{class:'home-steps'},h('header',{},h('h2',{},'จากสัดส่วนสู่ชุดที่เหมาะกับคุณ ช่วยให้ตัดสินใจเช่าได้ง่ายขึ้น'),note('ขั้นตอนเรียบง่ายที่เชื่อมโยงระบบลองชุดเสมือนจริงเข้ากับการเลือกเช่าใน Marketplace')), ...[
-      ['01 Discover','บันทึกขนาดรอบอก เอว สะโพกและส่วนสูงของคุณเพียงครั้งเดียว ระบบสร้างโมเดลสัดส่วนอัตโนมัติ','บันทึกขนาดสำหรับทุกชุด →'],
-      ['02 Match & Try','ระบบเทียบสัดส่วนและลองชุดบนหุ่น 3D แบบเรียลไทม์ ตรวจสอบความตึงผ้าและการเคลื่อนไหวรอบ 360°','ตรวจความพอดีรอบตัว 360° →'],
-      ['03 Decide','มั่นใจในความพอดีสั่งเช่าพร้อมคุ้มครองเงินมัดจำด้วยระบบ Escrow ได้รับชุดตรงปกตามที่ตรวจสอบ','คุ้มครองตลอดระยะเวลาเช่า →']
-    ].map(([title,copy,link],index)=>h('article',{},h('span',{class:'step-icon','aria-hidden':'true'},['◇','▤','♙'][index]),h('h3',{},title),note(copy),h('a',{href:index===1?'#studio':'#shop'},link)))),
-    h('section',{class:'home-choice'},h('h2',{},'เลือกชุดที่ใช่ ส่งต่อชุดที่มี'),note('ให้ทุกชุดได้หมุนเวียนใช้งานในโอกาสใหม่'),h('div',{class:'mode-switch home-mode'},h('a',{href:'#shop'},'เช่า'),h('a',{href:'#closet/listings'},'ปล่อยเช่า')),h('div',{class:'choice-copy'},h('p',{},'Find what fits.',h('br'),'Rent what you need.'),h('p',{},'List what you own.',h('br'),"Earn from what you don't wear."))),
-    h('section',{class:'home-studio-cta'},h('div',{},h('h2',{},'พร้อมสร้างหุ่นจำลอง 3D ของคุณแล้วหรือยัง?'),note('สัมผัสประสบการณ์เช่าชุดคอสเพลย์ยุคใหม่ เลิกกังวลเรื่องไซส์ มั่นใจทุกครั้ง'),h('div',{class:'row'},h('a',{class:'dark',href:'#studio'},'♙ สร้างหุ่นของฉันใน 1 นาที (ฟรี)'),h('a',{class:'secondary',href:'#shop'},'⌕ ค้นหาชุด')))));
+  const hero=h('section',{class:'home-hero'},
+    h('div',{class:'home-hero-copy'},h('h1',{class:'home-hero-title'},h('span',{},'Find what fits.'),h('strong',{},'Rent what you need.')),h('p',{class:'home-hero-description'},h('strong',{},'ตู้เสื้อผ้า'),'สำหรับทุกโอกาส เช็กความพอดีและลองก่อนเช่า'),h('div',{class:'home-hero-actions'},h('a',{class:'hero-button hero-button-light',href:'#shop'},uiIcon('search'),'ค้นหาชุด'),h('a',{class:'hero-button hero-button-dark',href:'#studio'},uiIcon('mannequin'),'ลองชุดของฉัน'))),
+    h('div',{class:'studio-hero'},heroHost,h('div',{class:'hero-studio-copy'},heroStatus,h('a',{class:'hero-caption',href:'#studio'},h('b',{},'3D STUDIO'),h('small',{},'เปิดห้องลองชุด',uiIcon('arrowRight','ui-icon inline-arrow')))))
+  );
+  const previous=h('button',{type:'button',class:'carousel-arrow','aria-label':'หมวดก่อนหน้า',onclick:()=>{active=(active-1+OCCASION_CATEGORIES.length)%OCCASION_CATEGORIES.length;draw()}},uiIcon('chevronLeft'));
+  const next=h('button',{type:'button',class:'carousel-arrow','aria-label':'หมวดถัดไป',onclick:()=>{active=(active+1)%OCCASION_CATEGORIES.length;draw()}},uiIcon('chevronRight'));
+  const occasion=h('section',{class:'occasion-section'},h('h2',{},'เสื้อผ้าสำหรับทุกโอกาสของคุณ'),note('เลือกดูชุดตามโอกาส พร้อมระบบเทียบสัดส่วนและลองชุดบนหุ่น 3D ก่อนเช่า'),h('div',{class:'occasion-carousel'},previous,track,next));
+  const message=h('section',{class:'home-message'},h('p',{},'“ ชุดนี้จะพอดีกับเราไหม? ”'),h('em',{},'รูปสินค้าจริงอย่างเดียวบอกไม่ได้ว่าชุดจะพอดีกับเรา ผู้ใช้จึงต้องคาดเดาจาก Size Chart ก่อนเช่า'),h('span',{class:'home-message-mark'},'TOO',h('br'),'SUEA',h('br'),'PHA'),h('h3',{},'Too Suea Pha ช่วยให้คุณตัดสินใจได้ก่อนเช่า'));
+  const stepData=[
+    ['01 Discover','บันทึกขนาดรอบอก เอว สะโพกและส่วนสูงของคุณเพียงครั้งเดียว ระบบสร้างโมเดลสัดส่วนอัตโนมัติ','บันทึกขนาดสำหรับทุกชุด','scanCube'],
+    ['02 Match & Try','ระบบเทียบสัดส่วนและลองชุดบนหุ่น 3D แบบเรียลไทม์ ตรวจสอบความตึงผ้าและการเคลื่อนไหวรอบ 360°','ตรวจความพอดีรอบตัว 360°','ruler'],
+    ['03 Decide','มั่นใจในความพอดีสั่งเช่าพร้อมคุ้มครองเงินมัดจำด้วยระบบ Escrow ได้รับชุดตรงปกตามที่ตรวจสอบ','คุ้มครองตลอดระยะเวลาเช่า','bag']
+  ];
+  const steps=h('section',{class:'home-steps'},h('header',{},h('h2',{},'จากสัดส่วนสู่ชุดที่เหมาะกับคุณ ช่วยให้ตัดสินใจเช่าได้ง่ายขึ้น'),note('ขั้นตอนเรียบง่ายที่เชื่อมโยงระบบลองชุดเสมือนจริงเข้ากับการเลือกเช่าใน Marketplace')),...stepData.map(([title,copy,link,icon],index)=>h('article',{},uiIcon(icon,'ui-icon step-icon'),h('h3',{},title),note(copy),h('a',{href:index===1?'#studio':'#shop'},link,uiIcon('arrowRight','ui-icon inline-arrow')))));
+  const choice=h('section',{class:'home-choice'},h('h2',{},'เลือกชุดที่ใช่ ส่งต่อชุดที่มี'),note('ให้ทุกชุดได้หมุนเวียนใช้งานในโอกาสใหม่'),h('div',{class:'mode-switch home-mode'},h('a',{href:'#shop'},'เช่า'),h('a',{href:'#closet/listings'},'ปล่อยเช่า')),h('div',{class:'choice-copy'},h('p',{},'Find what fits.',h('br'),'Rent what you need.'),h('p',{},'List what you own.',h('br'),"Earn from what you don't wear.")));
+  const cta=h('section',{class:'home-studio-cta'},h('div',{},h('h2',{},'พร้อมสร้างหุ่นจำลอง 3D ของคุณแล้วหรือยัง?'),note('สัมผัสประสบการณ์เช่าชุดคอสเพลย์ยุคใหม่ เลิกกังวลเรื่องไซส์ มั่นใจทุกครั้ง'),h('div',{class:'row'},h('a',{class:'dark',href:'#studio'},uiIcon('userPlus'),'สร้างหุ่นของฉันใน 1 นาที (ฟรี)'),h('a',{class:'secondary',href:'#shop'},uiIcon('search'),'ค้นหาชุด'))));
+  draw();const root=h('div',{class:'home-page'},hero,occasion,message,steps,choice,cta);
   mountHeroStudio(heroHost,heroStatus);
   return root;
 }

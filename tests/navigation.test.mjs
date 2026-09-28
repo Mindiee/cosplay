@@ -97,6 +97,27 @@ test('Home matches the supplied Figma sections and reuses the existing 3D hero r
   assert.match(app,/filters\.occasion=key/);
 });
 
+test('Home uses the Figma icon language, centered search, and one explicit type system',async()=>{
+  const [html,app,styles]=await Promise.all([
+    readFile(new URL('index.html',root),'utf8'),
+    readFile(new URL('app.js',root),'utf8'),
+    readFile(new URL('toosuepha.css',root),'utf8'),
+  ]);
+  const homeSource=app.slice(app.indexOf('function homePage()'),app.indexOf('function marketplace()'));
+  assert.match(app,/function uiIcon\(name/);
+  for(const icon of ['search','mannequin','userPlus','arrowRight'])assert.match(homeSource,new RegExp(`uiIcon\\('${icon}'`));
+  for(const icon of ['scanCube','ruler','bag'])assert.match(homeSource,new RegExp(`'${icon}'`));
+  assert.match(homeSource,/uiIcon\(icon,'ui-icon step-icon'\)/);
+  assert.doesNotMatch(homeSource,/[◇▤♙⌕←→]/);
+  assert.match(html,/class="ui-icon nav-search-icon"/);
+  assert.match(html,/class="ui-icon nav-plus-icon"/);
+  assert.match(html,/class="ui-icon footer-shield-icon"/);
+  assert.doesNotMatch(html,/[＋◉]/);
+  assert.match(styles,/--ui-font:Arial,"Noto Sans Thai",Tahoma,sans-serif/);
+  assert.match(styles,/\.topbar \.global-search\{position:absolute;left:50%;transform:translateX\(-50%\)/);
+  assert.match(styles,/font-family:var\(--ui-font\)/);
+});
+
 test('My Rentals has overview history and one booking detail route for receive and return',async()=>{
   const [app,styles]=await Promise.all([
     readFile(new URL('app.js',root),'utf8'),
