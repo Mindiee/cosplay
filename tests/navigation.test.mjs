@@ -113,7 +113,7 @@ test('Home uses the Figma icon language, centered search, and one explicit type 
   assert.match(html,/class="ui-icon nav-plus-icon"/);
   assert.match(html,/class="ui-icon footer-shield-icon"/);
   assert.doesNotMatch(html,/[＋◉]/);
-  assert.match(styles,/--ui-font:Arial,"Noto Sans Thai",Tahoma,sans-serif/);
+  assert.match(styles,/--ui-font:"Anuphan","Inter",sans-serif/);
   assert.match(styles,/\.topbar \.global-search\{position:absolute;left:50%;transform:translateX\(-50%\)/);
   assert.match(styles,/font-family:var\(--ui-font\)/);
 });

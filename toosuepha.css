@@ -1,3 +1,6 @@
+@font-face{font-family:"Anuphan";font-style:normal;font-weight:300 700;font-display:swap;src:url("assets/fonts/anuphan-thai.woff2") format("woff2");unicode-range:U+0E00-0E7F}
+@font-face{font-family:"Inter";font-style:normal;font-weight:300 700;font-display:swap;src:url("assets/fonts/inter-latin.woff2") format("woff2");unicode-range:U+0000-024F}
+
 :root{--paper:#fafaf8;--surface:#fff;--ink:#181816;--muted:#73736c;--line:#e5e5df;--soft:#f2f2ed;--accent:#df725c;--green:#51715a;--radius:14px;--shadow:0 12px 36px rgba(30,30,24,.08);font-family:"DM Sans",Tahoma,sans-serif;color:var(--ink);background:var(--paper);font-synthesis:none}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;background:var(--paper);color:var(--ink);line-height:1.45}body::selection{background:#e6c1b8}a{color:inherit;text-decoration:none}button,input,select,textarea{font:inherit;color:inherit}button,a,input,select,textarea,summary{outline-offset:3px}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.45}img{display:block;max-width:100%}h1,h2,h3,p{margin-top:0}h1,h2{letter-spacing:-.04em}.skip-link{position:fixed;z-index:99;left:1rem;top:-6rem;padding:.7rem 1rem;background:#111;color:#fff}.skip-link:focus{top:1rem}.loading{padding:15vh;text-align:center;color:var(--muted)}
 
@@ -161,8 +164,9 @@ body{font:400 14px/1.45 Arial,"Noto Sans Thai",Tahoma,sans-serif}h1,h2,h3,.brand
 @media(max-width:760px){.topbar{grid-template-columns:1fr auto;height:61px}.topbar .global-search,.topbar .sell-trigger{display:none}.topbar .account-trigger{display:block;min-width:0;height:34px;min-height:34px;padding:0 12px;font-size:10px}.home-page>.home-hero{display:grid;grid-template-columns:1fr;height:auto;min-height:0}.home-page>.home-hero>.home-hero-copy{padding:70px 24px 48px}.home-page>.home-hero .studio-hero{height:430px;min-height:430px}.home-page>.occasion-section{height:520px;padding-top:70px}.home-page .occasion-track{margin-left:calc(50% - 150px - (var(--active) * 190px));gap:8px}.home-page .occasion-card{flex-basis:182px;width:182px;height:130px}.home-page .occasion-card.active{flex-basis:300px;width:300px;height:240px}.home-page>.home-message{height:400px}.home-page>.home-message>p{font-size:36px}.home-page>.home-message>em{font-size:12px}.home-page>.home-steps{grid-template-columns:1fr;height:auto;padding:70px 0;row-gap:14px}.home-page>.home-steps article{width:100%}.home-page>.home-choice{height:480px}.home-page>.home-choice .choice-copy p{font-size:21px}.home-page>.home-studio-cta{height:auto;padding:70px 24px}.site-footer{display:none}}
 
 /* Figma icon and typography audit. */
-:root{--ui-font:Arial,"Noto Sans Thai",Tahoma,sans-serif}
-body,button,input,select,textarea{font-family:var(--ui-font)}
+:root{--ui-font:"Anuphan","Inter",sans-serif}
+body,button,input,select,textarea{font-family:var(--ui-font)!important;font-synthesis-weight:none}
+body *{font-family:var(--ui-font)!important}
 .topbar,.home-page,.site-footer{font-family:var(--ui-font)}
 .ui-icon{display:block;width:18px;height:18px;flex:0 0 18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .topbar{display:flex;position:sticky}.topbar>.brand{flex:0 0 auto}.topbar .global-search{position:absolute;left:50%;transform:translateX(-50%);width:min(49vw,628px);justify-self:auto}.topbar .nav-actions{margin-left:auto}.topbar .sell-trigger{display:flex;align-items:center;justify-content:center;gap:6px}.nav-search-icon{width:14px;height:14px;flex-basis:14px;stroke-width:2}.nav-plus-icon{width:15px;height:15px;flex-basis:15px;stroke-width:2}.footer-shield-icon{display:inline-block;width:13px;height:13px;margin-right:4px;vertical-align:-3px;stroke-width:2}
