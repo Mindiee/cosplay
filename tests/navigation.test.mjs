@@ -126,3 +126,17 @@ test('My Closet is one lender workspace with listings requests operations and ea
   assert.match(presenter,/function listingRentalSchedule/);
   assert.doesNotMatch(app,/#closet\/(?:dashboard|earnings)/);
 });
+
+test('Try-on surfaces use only the existing 3D renderer and never render the 2D mannequin overlay',async()=>{
+  const [app,seller,styles]=await Promise.all([
+    readFile(new URL('app.js',root),'utf8'),
+    readFile(new URL('cosplay-seller.js',root),'utf8'),
+    readFile(new URL('toosuepha.css',root),'utf8'),
+  ]);
+  assert.doesNotMatch(app,/renderMannequin/);
+  assert.doesNotMatch(seller,/renderMannequin|seller-mannequin/);
+  assert.doesNotMatch(app,/แสดงภาพจริงคู่หุ่น/);
+  assert.match(app,/พรีวิว 3D ไม่พร้อมสำหรับสินค้านี้/);
+  assert.doesNotMatch(styles,/\.tryon-stage svg|\.no-overlay|\.seller-mannequin/);
+  assert.match(app,/mountPreviewStudio\(/);
+});
