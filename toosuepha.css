@@ -68,9 +68,9 @@ body{font:400 14px/1.45 Arial,"Noto Sans Thai",Tahoma,sans-serif}h1,h2,h3,.brand
 .studio-ready::first-letter{color:#22b16a}
 .studio-layout{grid-template-columns:minmax(560px,700px) minmax(390px,1fr);gap:24px;align-items:start}
 .studio-view,.studio-profile-panel,.studio-ratios,.studio-catalog-panel{border:1px solid #e5e5e5;border-radius:12px;background:#fff}
-.studio-view{background:#f0f0ee}
+.studio-view{background:#fafaf8}
 .studio-stage-top{height:44px;padding:0 38px;border:0;font-size:11px;letter-spacing:0}
-.studio-canvas{height:610px;background:#f0f0ee}
+.studio-canvas{height:610px;background:#fafaf8}
 .studio-camera{position:absolute;z-index:3;left:50%;bottom:38px;transform:translateX(-50%);padding:5px;border:1px solid rgba(0,0,0,.08);border-radius:9px;background:rgba(255,255,255,.9)}
 .studio-camera button{min-width:38px;background:transparent}
 .studio-view>.studio-status{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);width:max-content;max-width:90%;padding:0;text-align:center;color:#666}
