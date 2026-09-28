@@ -102,3 +102,27 @@ test('My Rentals has overview history and one booking detail route for receive a
   assert.match(styles,/\.rental-timeline/);
   assert.match(styles,/\.rental-detail-grid/);
 });
+
+test('My Closet is one lender workspace with listings requests operations and earnings',async()=>{
+  const [app,styles,presenter]=await Promise.all([
+    readFile(new URL('app.js',root),'utf8'),
+    readFile(new URL('toosuepha.css',root),'utf8'),
+    readFile(new URL('lender-presenter.js',root),'utf8'),
+  ]);
+  assert.match(app,/from '\.\/lender-presenter\.js'/);
+  assert.match(app,/const tabs=\{listings:'My Listings',requests:'Rental Requests'\}/);
+  assert.match(app,/ต้องทำตอนนี้/);
+  assert.match(app,/กำลังดำเนินการ/);
+  assert.match(app,/ประวัติ/);
+  assert.match(app,/Pending Earnings/);
+  assert.match(app,/Available Earnings/);
+  assert.match(app,/function lenderBookingCard\(/);
+  assert.match(app,/function lenderListingCard\(/);
+  assert.match(styles,/\.lender-summary-grid/);
+  assert.match(styles,/\.lender-booking-card/);
+  assert.match(styles,/\.lender-listing-card/);
+  assert.match(styles,/\.lender-ledger/);
+  assert.match(presenter,/function lenderBookingBuckets/);
+  assert.match(presenter,/function listingRentalSchedule/);
+  assert.doesNotMatch(app,/#closet\/(?:dashboard|earnings)/);
+});

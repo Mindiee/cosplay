@@ -9,7 +9,7 @@
 ## Product rules
 - Listings have independent size variants, measurements, daily rental prices and availability flags.
 - Rental price is stored in `sizeVariants[].price` and displayed per day.
-- Rental checkout groups live in `state.rentalCheckoutGroups`; paid bookings live in `state.rentals`; preserve `state.orders` as legacy history.
+- Rental checkout groups live in `state.checkoutGroups`; paid bookings live in `state.rentals`; preserve `state.orders` as legacy history.
 - Paid inclusive date ranges block the same listing and variant. Checkout validates every item and commits the group, bookings, mock payment and escrow atomically.
 - Keep checkout, booking lifecycle, tracking, cancellation, mock refund and escrow release inside existing IndexedDB transactions.
 - Rental status follows the receive and return lifecycle in `cosplay-domain.js`; enforce renter and lender actions for every transition.
@@ -33,10 +33,12 @@
 - `cosplay-domain.js` and `domain.js`: rental, legacy purchase, listing and account rules.
 - `mannequin.js`: mannequin dimensions and fit calculation.
 - `rental-presenter.js`: pure renter phase, timeline, urgency, next-action and snapshot Fit Match selectors.
+- `lender-presenter.js`: pure lender action queues, listing schedules, summary and ledger selectors.
 - `studio-ui.js`, `studio-renderer.js`, `studio-domain.js`: 3D Studio UI, Three.js rendering and slot rules.
 - `cosplay-seed.js` and `studio-catalog.json`: versioned demo catalog.
 - `tests/`: behavioral regression tests.
 - `#rentals` is the renter overview and `#rental/:id` is its single receive/return detail route; do not create separate receive or return pages.
+- `#closet/listings` and `#closet/requests` form one lender workspace. Keep earnings and fulfillment inside these two tabs; do not add dashboard or earnings routes.
 - `Closet-handoff.md` and `IMPLEMENTATION-REPORT.md`: detailed project history and delivery notes.
 
 ## Delivery
