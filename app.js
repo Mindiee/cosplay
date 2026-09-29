@@ -1,4 +1,5 @@
 import {createCosplayRepository} from './repository.js';
+import {createLenderPortal} from './lender-ui.js';
 import {h,money,photoUrl,cover,labels} from './dom.js';
 import {openAccounts} from './panels.js';
 import {PRESETS,validateBody,calculateFit,calculateFitMatch} from './mannequin.js';
@@ -296,58 +297,20 @@ const LEDGER_LABELS={escrow_hold:'พักค่าเช่าใน Escrow',e
 function lenderLedger(){const rows=lenderLedgerRows(state,me());return h('section',{class:'lender-ledger'},h('div',{class:'lender-section-head'},h('div',{},h('p',{class:'eyebrow'},'MOCK BALANCE'),h('h2',{},'รายการรายได้')),h('span',{},`${rows.length} รายการ`)),rows.length?h('div',{class:'lender-ledger-list'},...rows.slice(0,8).map(row=>h('div',{},h('span',{},h('b',{},LEDGER_LABELS[row.type]||row.type),h('small',{},`Booking #${row.bookingId.slice(-8)} · ${dt(row.at)}`)),h('strong',{class:row.type==='refund'?'negative':''},`${row.type==='refund'?'-':'+'}${money(row.amount)}`)))):note('ยังไม่มีรายการรายได้'))}
 
 function closetPage(tab){
-  if(!me())return h('section',{class:'page-shell'},heading('MY CLOSET','พื้นที่ของคุณ'),button('เลือกบัญชีเดโม',()=>openAccounts(ctx),'dark'));
-  const active=['overview','listings','requests','returns'].includes(tab)?tab:'listings';
-  const own=state.listings.filter(item=>item.sellerId===me()&&item.status!=='deleted');
-  const bookings=state.rentals.filter(row=>row.sellerId===me()).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  const summary=lenderSummary(state,me());
-  const shellHeader=h('header',{class:'partner-header'},
-    h('a',{class:'partner-brand',href:'#home'},h('strong',{},'TooSuePha'),h('span',{},'PARTNER')),
-    h('div',{class:'partner-mode'},h('a',{href:'#shop'},'เช่า'),h('a',{href:'#closet/overview',class:'active'},'ปล่อยเช่า')),
-    h('form',{class:'partner-search',onsubmit:event=>{event.preventDefault();filters.q=event.currentTarget.querySelector('input').value.trim();go('#shop')}},uiIcon('search'),h('input',{type:'search',placeholder:'ค้นหาชุด คำสั่งเช่า หรือรหัสสินค้า','aria-label':'ค้นหา'})),
-    h('div',{class:'partner-actions'},h('button',{type:'button',class:'partner-icon','aria-label':'การแจ้งเตือน'},uiIcon('bell')),h('button',{type:'button',class:'partner-profile',onclick:()=>openAccounts(ctx)},h('span',{},(user(me()).name||'T').slice(0,1)),h('b',{},user(me()).name),h('small',{},'Partner')))
-  );
-  const navItem=(key,label,icon,count)=>h('a',{href:`#closet/${key}`,class:(active===key||(key==='requests'&&active==='returns'))?'active':'','aria-current':active===key?'page':null},uiIcon(icon),h('span',{},label),count!=null?h('b',{},count):null);
-  const sidebar=h('aside',{class:'partner-sidebar'},h('p',{},'เมนูหลักผู้ปล่อยเช่า'),navItem('overview','ภาพรวม','dashboard'),navItem('listings','คลังชุด','wardrobe',own.length),navItem('requests','การเช่า','receipt',bookings.length),h('div',{class:'partner-sidebar-help'},h('strong',{},'ต้องการความช่วยเหลือ?'),h('span',{},'คู่มือสำหรับผู้ปล่อยเช่า'),h('a',{href:'#home'},'ศูนย์ช่วยเหลือ →')));
-  const content=active==='overview'?lenderOverviewView(own,bookings,summary):active==='listings'?lenderClosetView(own):lenderOrdersView(bookings,active==='returns');
-  return h('section',{class:'lender-portal'},shellHeader,h('div',{class:'partner-body'},sidebar,h('main',{class:'partner-main'},content)));
+  if(!me())return h('section',{class:'page-shell'},heading('MY CLOSET','พื้นที่ของคุณ'),button('เลือกบัญชีเดโม',()=>openAccounts(ctx),'dark'),h('a',{href:'#shop',class:'secondary'},'Marketplace'));
+  return createLenderPortal({
+    state,actorId:me(),statusLabels:RENTAL_STATUS,
+    accounts:()=>openAccounts(ctx),
+    search:q=>{filters.q=q.trim();go('#shop')},
+    editListing:id=>openCosplayListing(ctx,id),
+    manageListing:item=>modal('จัดการชุด',()=>h('div',{class:'stack'},lenderListingCard(item))),
+    manageBooking:booking=>modal('รายละเอียดคำสั่งเช่า',()=>h('div',{class:'stack'},lenderBookingCard(booking),note('ยอดเงินและสถานะจาก Booking เดิม · การชำระเงินจำลอง')),{wide:true}),
+    showLedger:()=>modal('ยอดเงินของคุณ',()=>lenderLedger()),
+    showNotices:()=>modal('การแจ้งเตือน',()=>h('div',{class:'stack'},...lenderBookingBuckets(state,me()).action.map(lenderBookingCard),note('รายการที่ต้องดำเนินการจากคำสั่งเช่าของคุณ')),{wide:true}),
+    consignment:()=>modal('ส่งชุดเข้าคลัง',()=>h('div',{class:'stack'},note('บริการฝากคลังตามแบบ Figma เป็นพรีวิวในเดโมนี้ ยังไม่มีบริการรับชุด สแกน หรือจัดส่งอัตโนมัติ'),button('ลงชุดให้เช่า',()=>{close();openCosplayListing(ctx)},'dark'))),
+    feeInfo:()=>modal('ค่าธรรมเนียมและสิทธิพิเศษ Tier',()=>h('div',{class:'stack'},note('อัตรา 7% + 3% และ Damage Shield เป็นข้อมูลตัวอย่างตามแบบ Figma ยังไม่มีการหักค่าบริการหรือความคุ้มครองจริง ระบบจำลองยังปล่อยรายได้เต็มค่าเช่าตาม Booking เดิม'),lenderLedger()))
+  },tab);
 }
-
-function partnerPageHead(title,copy,action=true){
-  return h('div',{class:'partner-page-head'},h('div',{},h('div',{class:'partner-title-row'},h('h1',{},title),h('span',{class:'partner-status'},'สถานะบัญชี · ปกติ')),copy&&h('p',{},copy)),action?button('+ ลงชุดให้เช่า',()=>openCosplayListing(ctx),'partner-primary'):null);
-}
-
-function lenderOverviewView(own,bookings,summary){
-  const popular=[...own].sort((a,b)=>listingRentalSchedule(state,me(),b.id).length-listingRentalSchedule(state,me(),a.id).length).slice(0,3);
-  const taskCount=bookings.filter(row=>lenderNextAction(row,me())).length;
-  return h('div',{class:'partner-view overview-view'},
-    partnerPageHead('ภาพรวม',`ยินดีต้อนรับกลับ ${user(me()).name}`,false),
-    h('div',{class:'partner-overview-grid'},
-      h('div',{class:'partner-overview-left'},
-        h('article',{class:'consignment-card'},h('div',{},h('span',{class:'partner-kicker'},'CONSIGNMENT CARE'),h('h2',{},'ส่งชุดเข้าคลังกลาง'),h('p',{},'ให้ทีม TooSuePha ดูแลตั้งแต่ตรวจสภาพ จัดเก็บ ไปจนถึงจัดส่ง')),h('ol',{},h('li',{},h('b',{},'01'),'ส่งชุดเข้าคลัง'),h('li',{},h('b',{},'02'),'ตรวจและดูแล'),h('li',{},h('b',{},'03'),'พร้อมให้เช่า')),button('ส่งชุดเข้าคลัง',()=>openCosplayListing(ctx),'partner-light')),
-        h('section',{class:'popular-list'},h('div',{class:'partner-section-title'},h('div',{},h('h2',{},'ชุดยอดนิยมที่มีความต้องการเช่าสูง'),h('p',{},'ดูความเคลื่อนไหวของชุดในคลังคุณ')),h('a',{href:'#closet/listings'},'ดูทั้งหมด →')),...(popular.length?popular.map((item,index)=>h('article',{},h('span',{class:'popular-rank'},String(index+1).padStart(2,'0')),h('img',{src:photoUrl(cover(item)),alt:''}),h('div',{},h('b',{},item.title),h('small',{},`${item.character} · ${item.sizeVariants.map(v=>v.size).join(', ')}`)),h('strong',{},`${listingRentalSchedule(state,me(),item.id).length} การจอง`))):[note('ยังไม่มีชุดในคลัง')]))
-      ),
-      h('aside',{class:'partner-overview-right'},
-        h('article',{class:'seller-center-card'},h('span',{class:'partner-kicker'},'SELLER CENTER'),h('h2',{},'จัดการร้านของคุณ'),h('p',{},taskCount?`มี ${taskCount} รายการที่รอดำเนินการ`:'วันนี้ไม่มีรายการที่ต้องดำเนินการ'),h('div',{class:'seller-center-stats'},h('span',{},h('small',{},'ชุดที่เปิดให้เช่า'),h('b',{},summary.activeListings)),h('span',{},h('small',{},'กำลังถูกเช่า'),h('b',{},summary.currentlyRented))),button('+ ลงชุดให้เช่า',()=>openCosplayListing(ctx),'partner-primary'),h('a',{href:'#closet/requests'},'ดูคำสั่งเช่าทั้งหมด →')),
-        h('article',{class:'partner-tier-card'},h('div',{class:'tier-label'},h('span',{},'TIER 1'),h('b',{},'Master Wardrobe Partner')),h('h3',{},'ยอดเงินของคุณ'),h('div',{class:'tier-balance'},h('span',{},'พร้อมถอน (จำลอง)'),h('strong',{},money(summary.earnings.available))),h('dl',{},h('div',{},h('dt',{},'พักใน Escrow'),h('dd',{},money(summary.earnings.pending))),h('div',{},h('dt',{},'งานที่ต้องทำ'),h('dd',{},summary.actionRequired)),h('div',{},h('dt',{},'ค่าธรรมเนียมแพลตฟอร์ม'),h('dd',{},'15%'))),h('p',{},'Damage Shield · คุ้มครองข้อมูลการคืนและตรวจสภาพ'))
-      )
-    )
-  );
-}
-
-function lenderClosetView(own){
-  const body=own.length?own.map(item=>{const variants=item.sizeVariants||[],available=variants.filter(v=>v.stock>0),daily=minPrice(item),receive=Math.round(daily*.85);return h('tr',{},h('td',{},h('div',{class:'partner-product-cell'},h('img',{src:photoUrl(cover(item)),alt:''}),h('span',{},h('b',{},item.title),h('small',{},`${item.character} · SKU ${item.id.slice(-8).toUpperCase()}`)))),h('td',{},h('b',{},variants.map(v=>v.size).join(' / ')),h('small',{},CONDITIONS[item.condition]||item.condition)),h('td',{},h('b',{},`${money(daily)} / วัน`),h('small',{},`${available.length}/${variants.length} ไซซ์พร้อมเช่า`)),h('td',{},h('b',{},money(receive)),h('small',{},'หลังหักค่าธรรมเนียม 15%')),h('td',{},h('span',{class:`partner-pill ${item.status}`},item.status==='paused'?'พักให้เช่า':'พร้อมให้เช่า')),h('td',{},h('div',{class:'partner-table-actions'},button('จัดการ',()=>openCosplayListing(ctx,item.id),'partner-outline'),h('button',{type:'button',class:'partner-square','aria-label':`แก้ไข ${item.title}`,onclick:()=>openCosplayListing(ctx,item.id)},uiIcon('edit')))))}):[h('tr',{},h('td',{colspan:'6',class:'partner-empty'},'ยังไม่มีชุดในคลัง กด “+ ลงชุดให้เช่า” เพื่อเริ่มต้น'))];
-  return h('div',{class:'partner-view closet-table-view'},partnerPageHead('ตู้เสื้อผ้า (My Closet)','จัดการชุด ราคา ไซซ์ และสถานะที่เปิดให้เช่า'),h('div',{class:'partner-table-tools'},h('div',{},h('button',{type:'button',class:'active'},`ชุดทั้งหมด ${own.length}`),h('button',{type:'button'},`พร้อมให้เช่า ${own.filter(x=>x.status==='active').length}`),h('button',{type:'button'},`พักให้เช่า ${own.filter(x=>x.status==='paused').length}`)),h('label',{},uiIcon('search'),h('input',{type:'search',placeholder:'ค้นหาชุดหรือ SKU','aria-label':'ค้นหาชุดในคลัง'}))),h('div',{class:'partner-table-card'},h('table',{class:'partner-table'},h('thead',{},h('tr',{},...['สินค้า / SKU','ไซซ์และสภาพ','ราคาเช่า','รายรับโดยประมาณ','สถานะ','จัดการ'].map(label=>h('th',{},label)))),h('tbody',{},...body)),h('footer',{},h('span',{},`แสดง 1–${own.length} จาก ${own.length} รายการ`),h('div',{},h('button',{type:'button',disabled:true},'‹'),h('b',{},'1'),h('button',{type:'button',disabled:true},'›')))));
-}
-
-function lenderOrdersView(bookings,showReturns=false){
-  const returnStatuses=new Set(['renting','return_preparing','return_shipped','return_received','inspection','cleaning','completed']);
-  const rows=bookings.filter(row=>showReturns?returnStatuses.has(row.status):!returnStatuses.has(row.status));
-  const statusTabs=showReturns?[['ทั้งหมด',rows.length],['กำลังเช่า',rows.filter(x=>x.status==='renting').length],['เตรียมคืน',rows.filter(x=>x.status==='return_preparing').length],['กำลังส่งคืน',rows.filter(x=>x.status==='return_shipped').length],['ตรวจสภาพ/ทำความสะอาด',rows.filter(x=>['return_received','inspection','cleaning'].includes(x.status)).length],['เสร็จสิ้น',rows.filter(x=>x.status==='completed').length]]:[['ทั้งหมด',rows.length],['รอเตรียมชุด',rows.filter(x=>x.status==='paid').length],['กำลังเตรียม',rows.filter(x=>x.status==='preparing').length],['จัดส่งแล้ว',rows.filter(x=>['outbound_shipped','outbound_transit'].includes(x.status)).length],['ยกเลิก',rows.filter(x=>x.status==='cancelled').length]];
-  const tableRows=rows.length?rows.map(booking=>{const item=rentalItems(booking)[0],snap=item?.listingSnapshot||{},action=lenderNextAction(booking,me());return h('tr',{},h('td',{},h('div',{class:'partner-product-cell'},h('img',{src:photoUrl(snap.image),alt:''}),h('span',{},h('b',{},snap.title||'ชุดเช่า'),h('small',{},`Booking #${booking.id.slice(-8).toUpperCase()}`)))),h('td',{},h('b',{},user(booking.renterId)?.name||'ผู้เช่า'),h('small',{},`ไซซ์ ${item?.size||booking.size||'—'}`)),h('td',{},h('b',{},`${rentalDate(booking.pickupDate)}–${rentalDate(booking.returnDate)}`),h('small',{},`${booking.rentalDays||'—'} วัน`)),h('td',{},h('b',{},money(booking.totalPrice)),h('small',{},booking.paymentStatus||'ข้อมูลเดิม')),h('td',{},h('span',{class:`partner-pill ${booking.status}`},RENTAL_STATUS[booking.status]||booking.status)),h('td',{},action?button(action.label,()=>runLenderAction(booking,action),action.kind==='primary'?'partner-primary':'partner-outline'):h('span',{class:'partner-done'},'ดำเนินการแล้ว')))}):[h('tr',{},h('td',{colspan:'6',class:'partner-empty'},showReturns?'ยังไม่มีชุดอยู่ในขั้นตอนรับคืน':'ยังไม่มีคำสั่งเช่าในขั้นตอนส่งชุด'))];
-  return h('div',{class:'partner-view orders-view'},h('div',{class:'order-mode-tabs'},h('a',{href:'#closet/requests',class:showReturns?'':'active'},uiIcon('truck'),h('span',{},h('b',{},'คำสั่งเช่า'),h('small',{},'เตรียมและส่งชุดให้ผู้เช่า'))),h('a',{href:'#closet/returns',class:showReturns?'active':''},uiIcon('returnBox'),h('span',{},h('b',{},'รับชุดคืน'),h('small',{},'รับคืน ตรวจสภาพ และทำความสะอาด')))),partnerPageHead(showReturns?'รับชุดคืน':'คำสั่งเช่า',showReturns?'ติดตามชุดที่กำลังเช่าและจัดการขั้นตอนรับคืน':'จัดการ Booking ที่ชำระแล้วและเตรียมส่งให้ผู้เช่า'),h('section',{class:'partner-order-filter'},h('div',{class:'partner-status-tabs'},...statusTabs.map(([label,count],index)=>h('button',{type:'button',class:index===0?'active':''},label,h('span',{},count)))),h('div',{class:'partner-filter-row'},h('label',{},uiIcon('search'),h('input',{type:'search',placeholder:'ค้นหา Booking, ชุด หรือผู้เช่า','aria-label':'ค้นหาคำสั่งเช่า'})),h('button',{type:'button',class:'partner-outline'},uiIcon('filter'),'ตัวกรอง'),h('select',{'aria-label':'สถานะ'},h('option',{},'สถานะทั้งหมด')),h('select',{'aria-label':'เรียงลำดับ'},h('option',{},'ล่าสุดก่อน')))),h('div',{class:'partner-table-card'},h('table',{class:'partner-table'},h('thead',{},h('tr',{},...['รายการเช่า','ผู้เช่า / ไซซ์','วันรับ–คืน','ยอดค่าเช่า','สถานะ','ดำเนินการ'].map(label=>h('th',{},label)))),h('tbody',{},...tableRows))));
-}
-
 $('modalClose').onclick=close;
 $('modal').addEventListener('cancel',()=>modalRenderer=null);
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))close()});

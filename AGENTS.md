@@ -38,7 +38,8 @@
 - `cosplay-seed.js` and `studio-catalog.json`: versioned demo catalog.
 - `tests/`: behavioral regression tests.
 - `#rentals` is the renter overview and `#rental/:id` is its single receive/return detail route; do not create separate receive or return pages.
-- `#closet/listings` and `#closet/requests` form one lender workspace. Keep earnings and fulfillment inside these two tabs; do not add dashboard or earnings routes.
+- `lender-ui.js` renders the approved Figma lender workspace: `#closet/overview`, `#closet/listings`, `#closet/requests`, and `#closet/returns`. Existing listing/booking actions and earnings remain in dialogs owned by app.js. Do not add standalone earnings routes.
+- `assets/lender-figma/` contains direct Figma SVG exports; retain intrinsic dimensions. Tier fees and consignment are design previews, not new financial or fulfillment rules.
 - `Closet-handoff.md` and `IMPLEMENTATION-REPORT.md`: detailed project history and delivery notes.
 
 ## Delivery

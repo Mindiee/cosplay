@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 
 const root = new URL('../', import.meta.url);
+const lender = await readFile(new URL('lender-ui.js', root), 'utf8');
 
 test('standalone My Mannequin navigation is removed while 3D Studio stays available', async () => {
   const [html, app] = await Promise.all([
@@ -42,9 +43,9 @@ test('TooSuePha Figma navigation keeps marketplace, rentals and lender actions r
   assert.match(app,/route==='rentals'\?rentalsPage\(\)/);
   assert.match(app,/route==='saved'\?savedPage\(\)/);
   assert.match(app,/href:'#rentals'/);
-  assert.match(app,/href:`#closet\/\$\{key\}`/);
-  assert.match(app,/navItem\('listings','คลังชุด'/);
-  assert.match(app,/navItem\('requests','การเช่า'/);
+  assert.match(lender,/href:`#closet\/\$\{key\}`/);
+  assert.match(lender,/nav\('listings'/);
+  assert.match(lender,/nav\('requests','การเช่า'/);
   assert.doesNotMatch(app,/tab==='rentals'|tab==='saved'/);
   assert.doesNotMatch(html,/#closet\/(?:rentals|saved)/);
   assert.match(html,/id="rentalBagBtn"/);
@@ -145,13 +146,13 @@ test('My Closet is one lender workspace with listings requests operations and ea
     readFile(new URL('lender-presenter.js',root),'utf8'),
   ]);
   assert.match(app,/from '\.\/lender-presenter\.js'/);
-  assert.match(app,/function lenderOverviewView\(/);
-  assert.match(app,/function lenderClosetView\(/);
-  assert.match(app,/function lenderOrdersView\(/);
-  assert.match(app,/ส่งชุดเข้าคลังกลาง/);
-  assert.match(app,/คำสั่งเช่า/);
-  assert.match(app,/รับชุดคืน/);
-  assert.match(app,/ยอดเงินของคุณ/);
+  assert.match(lender,/function overview\(/);
+  assert.match(lender,/function listings\(/);
+  assert.match(lender,/function orders\(/);
+  assert.match(lender,/ส่งชุดเข้าคลังกลาง/);
+  assert.match(lender,/คำสั่งเช่า/);
+  assert.match(lender,/รับชุดคืน/);
+  assert.match(lender,/ดูรายได้และ Escrow จำลอง/);
   assert.match(app,/function lenderBookingCard\(/);
   assert.match(app,/function lenderListingCard\(/);
   assert.match(styles,/\.lender-summary-grid/);
