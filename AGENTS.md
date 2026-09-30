@@ -46,3 +46,5 @@
 - GitHub destination: `https://github.com/Mindiee/cosplay.git`.
 - Publish the current tested tree to `main` without rewriting history.
 - The app is static; all website source and bundled assets live in this repository.
+
+- renter-shell.js owns the shared Figma renter header/footer/icons for shop, product, tryon and studio. See outputs/renter-figma-alignment.md for parity exceptions and QA.
