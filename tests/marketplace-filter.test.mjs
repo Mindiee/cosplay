@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {filterMarketplaceListings,marketplaceThemes,marketplaceType} from '../marketplace-filter.js';
+import {filterMarketplaceListings,marketplaceThemes,marketplaceType,isIllustratedDemoCostume} from '../marketplace-filter.js';
+import {makeCosplaySeed} from '../cosplay-seed.js';
 
 const variant=(size,price,stock=1)=>({id:`${size}-${price}`,size,price,stock});
 const listings=[
@@ -39,4 +40,17 @@ test('Fit Match sorting puts unknown scores last and date availability keeps onl
   assert.deepEqual(filterMarketplaceListings(listings,{sort:'fit',fitScores}).map(x=>x.id),['mask','top','set','wig']);
   const availableVariantIds=new Set(['top:M-120','set:M-200']);
   assert.deepEqual(filterMarketplaceListings(listings,{availableVariantIds}).map(x=>x.id),['set','top']);
+});
+
+test('illustrated costume demos are absent from discovery while real items and historical records remain',()=>{
+  const state=makeCosplaySeed(1_700_000_000_000);
+  const illustrations=state.listings.filter(isIllustratedDemoCostume);
+  assert.equal(illustrations.length,12);
+  const visible=filterMarketplaceListings(state.listings,{});
+  assert.equal(visible.some(isIllustratedDemoCostume),false);
+  assert.equal(visible.length,8);
+  assert.equal(state.listings.length,20);
+  const real={...illustrations[0],id:'seller-costume',photos:[{src:'user-photo.jpg'}]};
+  assert.equal(isIllustratedDemoCostume(real),false);
+  assert.equal(filterMarketplaceListings([real],{}).length,1);
 });

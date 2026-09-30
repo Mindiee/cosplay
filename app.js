@@ -7,7 +7,7 @@ import {PRESETS,validateBody,calculateFit,calculateFitMatch} from './mannequin.j
 import {openCosplayListing} from './cosplay-seller.js';
 import {createStudioUI} from './studio-ui.js';
 import {rentalDays,rentalRangesOverlap} from './cosplay-domain.js';
-import {filterMarketplaceListings,marketplaceThemes} from './marketplace-filter.js';
+import {filterMarketplaceListings,marketplaceThemes,isIllustratedDemoCostume} from './marketplace-filter.js';
 import {OCCASION_CATEGORIES,OCCASION_LABELS} from './occasion-domain.js';
 import {rentalFitSummary,rentalPhase,rentalTimeline,rentalUrgency,renterNextAction} from './rental-presenter.js';
 import {lenderBookingBuckets,lenderLedgerRows,lenderNextAction,lenderSummary,listingRentalSchedule} from './lender-presenter.js';
@@ -147,7 +147,7 @@ function homePage(){
 
 function marketplace(){
   const grid=h('div',{class:'product-grid'}),count=h('span',{class:'result-count'}),pages=h('div',{class:'catalog-pagination'});let currentPage=1;
-  const rows=()=>{const fitScores={};for(const item of state.listings){const result=fitFor(item,item.sizeVariants.find(v=>v.stock&&(!filters.size||v.size===filters.size))||firstVariant(item));if(result)fitScores[item.id]=result.score}return filterMarketplaceListings(state.listings,{...filters,fitScores,availableVariantIds:availableVariantIds()})};
+  const rows=()=>{const fitScores={};for(const item of state.listings){if(isIllustratedDemoCostume(item))continue;const result=fitFor(item,item.sizeVariants.find(v=>v.stock&&(!filters.size||v.size===filters.size))||firstVariant(item));if(result)fitScores[item.id]=result.score}return filterMarketplaceListings(state.listings,{...filters,fitScores,availableVariantIds:availableVariantIds()})};
   function update(reset=true){if(reset)currentPage=1;const allRows=rows(),pageCount=Math.max(1,Math.ceil(allRows.length/6));currentPage=Math.min(currentPage,pageCount);const list=allRows.slice((currentPage-1)*6,currentPage*6);pages.replaceChildren(h('small',{},'แสดง '+(allRows.length?(currentPage-1)*6+1:0)+' - '+Math.min(currentPage*6,allRows.length)+' จากทั้งหมด '+allRows.length+' ชุด'),h('div',{},...Array.from({length:pageCount},(_,i)=>button(String(i+1),()=>{currentPage=i+1;update(false)},currentPage===i+1?'dark':'secondary',{'aria-label':'หน้าที่ '+(i+1),'aria-current':currentPage===i+1?'page':null}))));count.textContent=`(${allRows.length} รายการ)`;grid.replaceChildren(...(list.length?list.map(renterCard):[empty('ยังไม่พบชุดที่ค้นหา','ลองเปลี่ยนคำค้น ไซซ์ ราคา หรือช่วงวันเช่า')]))}
   const select=(key,label,options)=>h('select',{'aria-label':label,onchange:e=>{filters[key]=e.target.value;update()}},...options.map(([v,t])=>h('option',{value:v,selected:filters[key]===v},t)));
   const themeNames={academy:'Academy',fantasy:'Fantasy',gothic:'Gothic'};
@@ -221,7 +221,7 @@ function tryOnPage(id){
   update();
   const bagRows=(state.rentalBags?.[me()]?.items||[]).map(row=>{const item=listing(row.listingId),size=item?.sizeVariants.find(v=>v.id===row.variantId);return item&&size?{item,size}:null}).filter(Boolean),bagTotal=bagRows.reduce((sum,row)=>sum+row.size.price,0);
   const bag=h('div',{class:'tryon-bag'},h('h3',{},`รายการเช่า · ${bagRows.length}`),h('div',{class:'tryon-bag-list'},...(bagRows.length?bagRows.map(({item,size})=>h('div',{class:'tryon-bag-item'},h('img',{src:photoUrl(cover(item)),alt:''}),h('span',{},h('b',{},item.title),h('small',{},`ไซซ์ ${size.size} · ${money(size.price)} / วัน`)))):[note('ยังไม่มีชิ้นในรายการ')])),h('div',{class:'tryon-total'},h('span',{},'รวมต่อวัน'),h('b',{},money(bagTotal))),bagRows.length?button('เลือกวันและเช่า',()=>openRentalBag(),'secondary full'):null);
-  return h('section',{class:'page-shell studio-shell'},h('a',{class:'back-link',href:`#product/${l.id}`},'Marketplace › Virtual Try-On'),h('div',{class:'tryon-heading'},heading('VIRTUAL TRY-ON','Virtual Try-On ห้องลองชุดเสมือนจริง','ลองใส่ชุดบนหุ่น 3D เทียบสัดส่วนจริงแบบเรียลไทม์'),h('a',{class:'secondary',href:'#studio'},figmaIcon('tryon','imgContainer5'),'หุ่นปัจจุบัน: '+(user(me())?.name||'มาตรฐาน')+' · เปลี่ยน')),h('div',{class:'tryon-layout'},h('aside',{class:'studio-controls'},summary,h('h3',{},'เลือกขนาดไซซ์'),picker,h('h3',{},'เลือกหุ่น'),mannequinSelect,!bodyForFit()?h('a',{class:'text-btn',href:'#studio'},'ตั้งสัดส่วนใน 3D Studio →'):null,edit,error,h('h3',{},'เลือกชุดที่ลอง'),h('select',{'aria-label':'เปลี่ยนชุด',onchange:e=>{studio=null;go(`#tryon/${e.target.value}`)}},...state.listings.filter(live).map(x=>h('option',{value:x.id,selected:x.id===l.id},`${x.character} — ${x.title}`)))),stage,h('aside',{class:'studio-results'},h('h2',{},figmaIcon('product','imgIcon'),'เช่าชุด'),h('article',{class:'tryon-current-item'},h('img',{src:photoUrl(cover(l)),alt:''}),h('div',{},h('b',{},l.title),h('small',{class:'tryon-selected-size'},'ไซซ์ '+variant.size),price)),rent,bag,h('p',{class:'disclaimer'},DISCLAIMER))));
+  return h('section',{class:'page-shell studio-shell'},h('a',{class:'back-link',href:`#product/${l.id}`},'Marketplace › Virtual Try-On'),h('div',{class:'tryon-heading'},heading('VIRTUAL TRY-ON','Virtual Try-On ห้องลองชุดเสมือนจริง','ลองใส่ชุดบนหุ่น 3D เทียบสัดส่วนจริงแบบเรียลไทม์'),h('a',{class:'secondary',href:'#studio'},figmaIcon('tryon','imgContainer5'),'หุ่นปัจจุบัน: '+(user(me())?.name||'มาตรฐาน')+' · เปลี่ยน')),h('div',{class:'tryon-layout'},h('aside',{class:'studio-controls'},summary,h('h3',{},'เลือกขนาดไซซ์'),picker,h('h3',{},'เลือกหุ่น'),mannequinSelect,!bodyForFit()?h('a',{class:'text-btn',href:'#studio'},'ตั้งสัดส่วนใน 3D Studio →'):null,edit,error,h('h3',{},'เลือกชุดที่ลอง'),h('select',{'aria-label':'เปลี่ยนชุด',onchange:e=>{studio=null;go(`#tryon/${e.target.value}`)}},...state.listings.filter(x=>live(x)&&(!isIllustratedDemoCostume(x)||x.id===l.id)).map(x=>h('option',{value:x.id,selected:x.id===l.id},`${x.character} — ${x.title}`)))),stage,h('aside',{class:'studio-results'},h('h2',{},figmaIcon('product','imgIcon'),'เช่าชุด'),h('article',{class:'tryon-current-item'},h('img',{src:photoUrl(cover(l)),alt:''}),h('div',{},h('b',{},l.title),h('small',{class:'tryon-selected-size'},'ไซซ์ '+variant.size),price)),rent,bag,h('p',{class:'disclaimer'},DISCLAIMER))));
 }
 
 function localDateKey(date=new Date()){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`}
@@ -297,7 +297,7 @@ function rentalsPage(){
 
 function savedPage(){
   if(!me())return h('section',{class:'page-shell'},heading('SAVED','ชุดที่คุณบันทึกไว้'),button('เลือกบัญชีเดโม',()=>openAccounts(ctx),'dark'));
-  const rows=state.listings.filter(l=>state.favorites[me()]?.includes(l.id)&&l.status!=='deleted');
+  const rows=state.listings.filter(l=>state.favorites[me()]?.includes(l.id)&&l.status!=='deleted'&&!isIllustratedDemoCostume(l));
   return h('section',{class:'page-shell'},heading('SAVED','ชุดที่คุณบันทึกไว้','กลับมาดูชุดที่สนใจและเช่าเมื่อพร้อม'),h('div',{class:'product-grid'},...(rows.length?rows.map(card):[empty('ยังไม่มีชุดที่บันทึก','กดหัวใจที่ชุดใน Marketplace เพื่อเก็บไว้ที่นี่')])));
 }
 

@@ -1,5 +1,10 @@
 const activePriceRows=item=>(item.sizeVariants||[]).filter(variant=>variant.stock>0);
 
+// Keep the original illustrated demo records for old bookings and direct links,
+// but do not offer their SVG costume mockups as current rental inventory.
+export const isIllustratedDemoCostume=item=>/^cos-(?:luna|ember|flora|celeste|raven|aurora|scarlet|mika|sol|iris|aqua|nova)$/.test(item?.id||'')
+  && item.photos?.some(photo=>typeof photo.src==='string'&&photo.src.startsWith('cosplay-assets/'));
+
 export function marketplaceType(item){
   if(['top','bottom','wig','accessory'].includes(item.category))return item.category;
   if(['top','bottom','wig'].includes(item.attachmentSlot))return item.attachmentSlot;
@@ -8,7 +13,7 @@ export function marketplaceType(item){
 }
 
 export function marketplaceThemes(listings){
-  return [...new Set(listings.filter(item=>item.status==='active'&&activePriceRows(item).length&&item.theme).map(item=>item.theme))].sort((a,b)=>a.localeCompare(b));
+  return [...new Set(listings.filter(item=>!isIllustratedDemoCostume(item)&&item.status==='active'&&activePriceRows(item).length&&item.theme).map(item=>item.theme))].sort((a,b)=>a.localeCompare(b));
 }
 
 export function filterMarketplaceListings(listings,filters={}){
@@ -16,7 +21,7 @@ export function filterMarketplaceListings(listings,filters={}){
   const ceiling=filters.maxPrice===''||filters.maxPrice==null?null:Number(filters.maxPrice);
   return listings.filter(item=>{
     const variants=activePriceRows(item);
-    if(item.status!=='active'||!variants.length)return false;
+    if(isIllustratedDemoCostume(item)||item.status!=='active'||!variants.length)return false;
     if(filters.occasion&&item.occasionCategory!==filters.occasion)return false;
     if(filters.theme&&item.theme!==filters.theme)return false;
     if(filters.type&&marketplaceType(item)!==filters.type)return false;
