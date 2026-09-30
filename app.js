@@ -1,16 +1,13 @@
 import {figmaIcon,renterHeader,renterFooter,breadcrumb} from './renter-shell.js';
 import {createCosplayRepository} from './repository.js';
-import {createLenderPortal} from './lender-ui.js';
 import {h,money,photoUrl,cover,labels} from './dom.js';
 import {openAccounts} from './panels.js';
 import {PRESETS,validateBody,calculateFit,calculateFitMatch} from './mannequin.js';
-import {openCosplayListing} from './cosplay-seller.js';
 import {createStudioUI} from './studio-ui.js';
 import {rentalDays,rentalRangesOverlap} from './cosplay-domain.js';
 import {filterMarketplaceListings,marketplaceThemes,isIllustratedDemoCostume} from './marketplace-filter.js';
 import {OCCASION_CATEGORIES,OCCASION_LABELS} from './occasion-domain.js';
 import {rentalFitSummary,rentalPhase,rentalTimeline,rentalUrgency,renterNextAction} from './rental-presenter.js';
-import {lenderBookingBuckets,lenderLedgerRows,lenderNextAction,lenderSummary,listingRentalSchedule} from './lender-presenter.js';
 
 const $=id=>document.getElementById(id);
 const DISCLAIMER='Virtual preview is an estimation and does not guarantee actual fit.';
@@ -36,30 +33,6 @@ function availableVariantIds(){
 const note=text=>h('p',{class:'muted'},text);
 const field=(text,input)=>h('label',{class:'field'},h('span',{},text),input);
 const button=(text,fn,className='secondary',attrs={})=>h('button',{type:'button',class:className,...attrs,onclick:()=>task(fn)},text);
-const ICON_PATHS={
-  search:['M10.5 4.5a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z','m15 15 5 5'],
-  mannequin:['M12 3.5a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6Z','M12 7.2v13.3M5.8 10.7 12 8.3l6.2 2.4M8.8 21 12 15l3.2 6'],
-  scanCube:['M7 3H5a2 2 0 0 0-2 2v2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2','m12 7 5 3-5 3-5-3 5-3Z','m7 10 5 3 5-3M7 10v5l5 3 5-3v-5M12 13v5'],
-  ruler:['M3 7h18v10H3z','M7 7v4M11 7v2M15 7v4M19 7v2'],
-  bag:['M5 8h14v12H5z','M9 8V6a3 3 0 0 1 6 0v2'],
-  userPlus:['M15 20.5a6 6 0 0 0-12 0','M9 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z','M18 7v6M15 10h6'],
-  arrowRight:['M5 12h14','m14 6 6 6-6 6'],
-  arrowLeft:['M19 12H5','m10 18-6-6 6-6'],
-  chevronRight:['m9 18 6-6-6-6'],
-  chevronLeft:['m15 18-6-6 6-6'],
-  dashboard:['M4 4h6v6H4z','M14 4h6v10h-6z','M4 14h6v6H4z','M14 18h6v2h-6z'],
-  wardrobe:['M5 3h14v18H5z','M12 3v18','M9 12h.01M15 12h.01'],
-  receipt:['M6 3h12v18l-3-2-3 2-3-2-3 2V3Z','M9 8h6M9 12h6'],
-  bell:['M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9','M10 21h4'],
-  wallet:['M4 6h16v13H4z','M4 9h16','M15 13h3'],
-  truck:['M3 6h11v10H3z','M14 10h4l3 3v3h-7z','M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z'],
-  returnBox:['M4 7h16v13H4z','m4 7 4-4h8l4 4','M9 13h6','m11 10-3 3 3 3'],
-  more:['M5 12h.01M12 12h.01M19 12h.01'],
-  edit:['M4 20h4L19 9l-4-4L4 16v4Z','m13-13 4 4'],
-  filter:['M4 6h16M7 12h10M10 18h4']
-};
-function uiIcon(name,className='ui-icon'){const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('class',className);svg.setAttribute('aria-hidden','true');for(const d of ICON_PATHS[name]||[]){const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',d);svg.append(path)}return svg}
-
 function toast(text){$('toast').textContent=text;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3500)}
 function task(fn){return Promise.resolve().then(fn).catch(error=>{toast(error?.message||'ทำรายการไม่สำเร็จ');return null})}
 function close(){modalRenderer=null;if($('modal').open)$('modal').close();previousFocus?.isConnected&&previousFocus.focus()}
@@ -82,24 +55,28 @@ function mountPreviewStudio(host,status,item,variant,body){
     heroStudio=createPreviewStudio(host,state,studioCatalog,{listingId:item.id,variantId:variant.id,body},messages=>{status.textContent=messages.length?messages.join(' · '):'ลากเพื่อหมุน · เลื่อนเพื่อซูม'});
   }).catch(error=>{console.error(error);if(mount===heroMount)status.textContent='ไม่สามารถเปิดพรีวิว 3D ได้'});
 }
-const ctx={get state(){return state},run,modal,close,toast,task,openCloset:tab=>go(`#closet/${tab==='selling'?'listings':tab||'listings'}`)};
+const ctx={get state(){return state},run,modal,close,toast,task,openCloset:()=>go('#shop')};
 const heading=(eyebrow,title,copy)=>h('div',{class:'page-heading'},h('p',{class:'eyebrow'},eyebrow),h('h1',{},title),copy&&note(copy));
 const empty=(title,copy)=>h('div',{class:'empty-state'},h('h2',{},title),note(copy),h('a',{class:'secondary',href:'#shop'},'กลับ Marketplace'));
 const dt=n=>new Date(n).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'});
 
 function render(){
   if(!state)return;
+  const [route,id,routeVariant]=location.hash.slice(1).split('/');
+  if(!['shop','product','tryon','rentals','saved','rental','studio'].includes(route)){
+    location.replace(`${location.pathname}${location.search}#shop`);
+    return;
+  }
   const accountName=user(me())?.name||'บัญชีเดโม';$('accountBtn').title=accountName;$('accountBtn').setAttribute('aria-label',`บัญชี ${accountName}`);
   const bagCount=state.rentalBags?.[me()]?.items?.length||0;$('rentalBagBtn').querySelector('span').textContent=`รายการเช่า · ${bagCount}`;
-  const [route,id,routeVariant]=location.hash.slice(1).split('/');
   const inStudio=route==='studio';document.body.classList.toggle('studio-active',inStudio);
-  document.body.classList.toggle('lender-active',route==='closet');
+  document.body.classList.remove('lender-active');
   const renterDesign=['shop','product','tryon','studio'].includes(route);document.body.classList.toggle('renter-design',renterDesign);
   const shell=view=>renterDesign?[renterHeader({profile:user(me()),accounts:()=>openAccounts(ctx),search:q=>{filters.q=q;go('#shop')},bag:openRentalBag,bagCount}),view,renterFooter(()=>openAccounts(ctx))]:[view];
   clearHeroStudio();
   if(inStudio){if(!mixStudio)mixStudio=createStudioUI({...ctx,get state(){return state},rental:openRental,accounts:()=>openAccounts(ctx)},studioCatalog,studioCatalogError);else mixStudio.update(state);$('page').replaceChildren(...shell(mixStudio.element));const routeKey=id?`${id}/${routeVariant||''}`:'';if(routeKey&&routeKey!==studioRouteApplied){studioRouteApplied=routeKey;task(()=>mixStudio.wearItem(id,routeVariant));}if(!routeKey)studioRouteApplied='';return;}
   studioRouteApplied='';
-  const view=route==='shop'?marketplace():route==='product'?productPage(id):route==='tryon'?tryOnPage(id):route==='rentals'?rentalsPage():route==='saved'?savedPage():route==='closet'?closetPage(id||'listings'):route==='rental'?rentalDetailPage(id):homePage();
+  const view=route==='shop'?marketplace():route==='product'?productPage(id):route==='tryon'?tryOnPage(id):route==='rentals'?rentalsPage():route==='saved'?savedPage():rentalDetailPage(id);
   $('page').replaceChildren(...shell(view));
 }
 
@@ -117,32 +94,6 @@ function renterCard(l){
     h('a',{class:'product-photo',href:'#product/'+l.id},h('img',{src:photoUrl(cover(l)),alt:l.character+' — '+l.title}),h('span',{class:'fit-chip '+(fit?'has-score':'unknown')},figmaIcon('market','imgContainer10'),fit?'พอดีตัว '+fit.score+'%':'Fit —'),h('span',{class:'card-seller'},'@'+(user(l.sellerId)?.name||'ผู้ให้เช่า'))),
     button(figmaIcon('market','imgContainer11'),()=>requireUser()&&run('favorite.toggle',{id:l.id}),'save-product',{'aria-label':'บันทึก '+l.title,'aria-pressed':String(!!saved)}),
     h('div',{class:'product-info'},h('small',{},l.character+' · ไซซ์ '+variant.size),h('h3',{},h('a',{href:'#product/'+l.id},l.title)),h('div',{class:'product-bottom'},h('span',{},'ค่าเช่าต่อวัน'),h('b',{},money(variant.price),h('small',{},' / วัน'))),h('div',{class:'card-actions'},l.model?h('a',{class:'secondary',href:'#tryon/'+l.id+'/'+variant.id},figmaIcon('market','imgContainer12'),'Preview'):h('span',{class:'secondary disabled'},'ไม่มี 3D'),button('เช่า',()=>openRental(l.id,variant.id),'dark',{disabled:l.sellerId===me()}))));
-}
-
-function homePage(){
-  let active=0;
-  const track=h('div',{class:'occasion-track'});
-  const draw=()=>{track.style.setProperty('--active',active);track.replaceChildren(...OCCASION_CATEGORIES.map((key,index)=>{const label=OCCASION_LABELS[key];return h('button',{type:'button',class:`occasion-card ${index===active?'active':''}`,style:`--distance:${Math.abs(index-active)}`,onclick:()=>{if(index===active){filters.occasion=key;go('#shop');return}active=index;draw()},'aria-pressed':String(index===active)},h('img',{src:`toosuepha-assets/${key}.jpg`,alt:''}),h('span',{},h('strong',{},label.title),h('small',{},label.subtitle)))}))};
-  const heroHost=h('div',{class:'hero-studio-viewport','aria-label':'หุ่นจำลอง 3D หมุนได้'}),heroStatus=h('span',{class:'hero-studio-status'},'กำลังเตรียมหุ่น 3D…');
-  const hero=h('section',{class:'home-hero'},
-    h('div',{class:'home-hero-copy'},h('h1',{class:'home-hero-title'},h('span',{},'Find what fits.'),h('strong',{},'Rent what you need.')),h('p',{class:'home-hero-description'},h('strong',{},'ตู้เสื้อผ้า'),'สำหรับทุกโอกาส เช็กความพอดีและลองก่อนเช่า'),h('div',{class:'home-hero-actions'},h('a',{class:'hero-button hero-button-light',href:'#shop'},uiIcon('search'),'ค้นหาชุด'),h('a',{class:'hero-button hero-button-dark',href:'#studio'},uiIcon('mannequin'),'ลองชุดของฉัน'))),
-    h('div',{class:'studio-hero'},heroHost,h('div',{class:'hero-studio-copy'},heroStatus,h('a',{class:'hero-caption',href:'#studio'},h('b',{},'3D STUDIO'),h('small',{},'เปิดห้องลองชุด',uiIcon('arrowRight','ui-icon inline-arrow')))))
-  );
-  const previous=h('button',{type:'button',class:'carousel-arrow','aria-label':'หมวดก่อนหน้า',onclick:()=>{active=(active-1+OCCASION_CATEGORIES.length)%OCCASION_CATEGORIES.length;draw()}},uiIcon('chevronLeft'));
-  const next=h('button',{type:'button',class:'carousel-arrow','aria-label':'หมวดถัดไป',onclick:()=>{active=(active+1)%OCCASION_CATEGORIES.length;draw()}},uiIcon('chevronRight'));
-  const occasion=h('section',{class:'occasion-section'},h('h2',{},'เสื้อผ้าสำหรับทุกโอกาสของคุณ'),note('เลือกดูชุดตามโอกาส พร้อมระบบเทียบสัดส่วนและลองชุดบนหุ่น 3D ก่อนเช่า'),h('div',{class:'occasion-carousel'},previous,track,next));
-  const message=h('section',{class:'home-message'},h('p',{},'“ ชุดนี้จะพอดีกับเราไหม? ”'),h('em',{},'รูปสินค้าจริงอย่างเดียวบอกไม่ได้ว่าชุดจะพอดีกับเรา ผู้ใช้จึงต้องคาดเดาจาก Size Chart ก่อนเช่า'),h('span',{class:'home-message-mark'},'TOO',h('br'),'SUEA',h('br'),'PHA'),h('h3',{},'Too Suea Pha ช่วยให้คุณตัดสินใจได้ก่อนเช่า'));
-  const stepData=[
-    ['01 Discover','บันทึกขนาดรอบอก เอว สะโพกและส่วนสูงของคุณเพียงครั้งเดียว ระบบสร้างโมเดลสัดส่วนอัตโนมัติ','บันทึกขนาดสำหรับทุกชุด','scanCube'],
-    ['02 Match & Try','ระบบเทียบสัดส่วนและลองชุดบนหุ่น 3D แบบเรียลไทม์ ตรวจสอบความตึงผ้าและการเคลื่อนไหวรอบ 360°','ตรวจความพอดีรอบตัว 360°','ruler'],
-    ['03 Decide','มั่นใจในความพอดีสั่งเช่าพร้อมคุ้มครองเงินมัดจำด้วยระบบ Escrow ได้รับชุดตรงปกตามที่ตรวจสอบ','คุ้มครองตลอดระยะเวลาเช่า','bag']
-  ];
-  const steps=h('section',{class:'home-steps'},h('header',{},h('h2',{},'จากสัดส่วนสู่ชุดที่เหมาะกับคุณ ช่วยให้ตัดสินใจเช่าได้ง่ายขึ้น'),note('ขั้นตอนเรียบง่ายที่เชื่อมโยงระบบลองชุดเสมือนจริงเข้ากับการเลือกเช่าใน Marketplace')),...stepData.map(([title,copy,link,icon],index)=>h('article',{},uiIcon(icon,'ui-icon step-icon'),h('h3',{},title),note(copy),h('a',{href:index===1?'#studio':'#shop'},link,uiIcon('arrowRight','ui-icon inline-arrow')))));
-  const choice=h('section',{class:'home-choice'},h('h2',{},'เลือกชุดที่ใช่ ส่งต่อชุดที่มี'),note('ให้ทุกชุดได้หมุนเวียนใช้งานในโอกาสใหม่'),h('div',{class:'mode-switch home-mode'},h('a',{href:'#shop'},'เช่า'),h('a',{href:'#closet/listings'},'ปล่อยเช่า')),h('div',{class:'choice-copy'},h('p',{},'Find what fits.',h('br'),'Rent what you need.'),h('p',{},'List what you own.',h('br'),"Earn from what you don't wear.")));
-  const cta=h('section',{class:'home-studio-cta'},h('div',{},h('h2',{},'พร้อมสร้างหุ่นจำลอง 3D ของคุณแล้วหรือยัง?'),note('สัมผัสประสบการณ์เช่าชุดคอสเพลย์ยุคใหม่ เลิกกังวลเรื่องไซส์ มั่นใจทุกครั้ง'),h('div',{class:'row'},h('a',{class:'dark',href:'#studio'},uiIcon('userPlus'),'สร้างหุ่นของฉันใน 1 นาที (ฟรี)'),h('a',{class:'secondary',href:'#shop'},uiIcon('search'),'ค้นหาชุด'))));
-  draw();const root=h('div',{class:'home-page'},hero,occasion,message,steps,choice,cta);
-  mountHeroStudio(heroHost,heroStatus);
-  return root;
 }
 
 function marketplace(){
@@ -301,40 +252,12 @@ function savedPage(){
   return h('section',{class:'page-shell'},heading('SAVED','ชุดที่คุณบันทึกไว้','กลับมาดูชุดที่สนใจและเช่าเมื่อพร้อม'),h('div',{class:'product-grid'},...(rows.length?rows.map(card):[empty('ยังไม่มีชุดที่บันทึก','กดหัวใจที่ชุดใน Marketplace เพื่อเก็บไว้ที่นี่')])));
 }
 
-function runLenderAction(booking,descriptor){if(!descriptor)return;if(descriptor.tracking)return trackingDialog(booking,descriptor.tracking);if(descriptor.action==='rental.inspect')return inspectionDialog(booking);return run(descriptor.action,{id:booking.id})}
-function lenderBookingCard(booking){
-  const items=rentalItems(booking),first=items[0],snapshot=first.listingSnapshot||{},action=lenderNextAction(booking,me()),renter=user(booking.renterId);
-  return h('article',{class:'lender-booking-card'},h('img',{src:photoUrl(snapshot.image),alt:snapshot.title||'ชุดเช่า'}),h('div',{class:'lender-booking-copy'},h('div',{class:'rental-card-top'},h('small',{},`BOOKING #${booking.id.slice(-8)}`),h('span',{class:`rental-status ${booking.status}`},RENTAL_STATUS[booking.status]||booking.status)),h('h3',{},items.map(row=>row.listingSnapshot?.title||'ชุดเช่า').join(' + ')),note(`${renter?.name||'ผู้เช่า'} · ${rentalDate(booking.pickupDate)}–${rentalDate(booking.returnDate)}`),h('div',{class:'lender-booking-meta'},h('span',{},'ค่าเช่า',h('b',{},money(booking.totalPrice))),h('span',{},'Payment',h('b',{},booking.paymentStatus||'ข้อมูลเดิม')),h('span',{},'Escrow',h('b',{},booking.escrowStatus||'ข้อมูลเดิม'))),booking.tracking?.outbound?note(`ขาไป · ${booking.tracking.outbound.carrier} ${booking.tracking.outbound.trackingNumber}`):null,booking.tracking?.return?note(`ขากลับ · ${booking.tracking.return.carrier} ${booking.tracking.return.trackingNumber}`):null),h('div',{class:'lender-booking-action'},action?button(action.label,()=>runLenderAction(booking,action),action.kind==='primary'?'dark':'secondary'):h('span',{class:'lender-action-done'},'ไม่มีสิ่งที่ต้องทำตอนนี้')));
-}
-function lenderListingCard(item){
-  const schedule=listingRentalSchedule(state,me(),item.id),next=schedule.find(row=>row.status!=='completed');
-  return h('article',{class:'lender-listing-card'},h('img',{src:photoUrl(cover(item)),alt:item.title}),h('div',{class:'lender-listing-copy'},h('div',{class:'rental-card-top'},h('small',{},item.character),h('span',{class:`listing-state ${item.status}`},item.status==='paused'?'พักการให้เช่า':'กำลังแสดง')),h('h3',{},item.title),h('div',{class:'variant-pills'},...item.sizeVariants.map(variant=>h('span',{class:variant.stock?'available':'unavailable'},`${variant.size} · ${variant.stock?'พร้อม':'ไม่ว่าง'}`))),next?h('p',{class:'listing-next-rental'},`คิวถัดไป · ไซซ์ ${next.size||'—'} · ${rentalDate(next.pickupDate)}–${rentalDate(next.returnDate)}`):note('ยังไม่มีคิวเช่าที่กำลังดำเนินการ')),h('div',{class:'lender-listing-actions'},button('แก้ไข',()=>openCosplayListing(ctx,item.id),'secondary'),button(item.status==='paused'?'เปิดให้เช่า':'พักให้เช่า',()=>run('listing.status',{id:item.id,status:item.status==='paused'?'active':'paused'}),'text-btn'),button('ลบ',()=>modal('นำประกาศออก',()=>h('div',{class:'stack'},note(`นำ ${item.title} ออกจาก Marketplace? ประวัติการเช่ายังอยู่`),button('ยืนยันนำออก',async()=>{await run('listing.status',{id:item.id,status:'deleted'});close()},'dark'))),'text-btn')));
-}
-const LEDGER_LABELS={escrow_hold:'พักค่าเช่าใน Escrow',escrow_release:'รายได้พร้อมถอน (จำลอง)',refund:'คืนเงินให้ผู้เช่า'};
-function lenderLedger(){const rows=lenderLedgerRows(state,me());return h('section',{class:'lender-ledger'},h('div',{class:'lender-section-head'},h('div',{},h('p',{class:'eyebrow'},'MOCK BALANCE'),h('h2',{},'รายการรายได้')),h('span',{},`${rows.length} รายการ`)),rows.length?h('div',{class:'lender-ledger-list'},...rows.slice(0,8).map(row=>h('div',{},h('span',{},h('b',{},LEDGER_LABELS[row.type]||row.type),h('small',{},`Booking #${row.bookingId.slice(-8)} · ${dt(row.at)}`)),h('strong',{class:row.type==='refund'?'negative':''},`${row.type==='refund'?'-':'+'}${money(row.amount)}`)))):note('ยังไม่มีรายการรายได้'))}
-
-function closetPage(tab){
-  if(!me())return h('section',{class:'page-shell'},heading('MY CLOSET','พื้นที่ของคุณ'),button('เลือกบัญชีเดโม',()=>openAccounts(ctx),'dark'),h('a',{href:'#shop',class:'secondary'},'Marketplace'));
-  return createLenderPortal({
-    state,actorId:me(),statusLabels:RENTAL_STATUS,
-    accounts:()=>openAccounts(ctx),
-    search:q=>{filters.q=q.trim();go('#shop')},
-    editListing:id=>openCosplayListing(ctx,id),
-    manageListing:item=>modal('จัดการชุด',()=>h('div',{class:'stack'},lenderListingCard(item))),
-    manageBooking:booking=>modal('รายละเอียดคำสั่งเช่า',()=>h('div',{class:'stack'},lenderBookingCard(booking),note('ยอดเงินและสถานะจาก Booking เดิม · การชำระเงินจำลอง')),{wide:true}),
-    showLedger:()=>modal('ยอดเงินของคุณ',()=>lenderLedger()),
-    showNotices:()=>modal('การแจ้งเตือน',()=>h('div',{class:'stack'},...lenderBookingBuckets(state,me()).action.map(lenderBookingCard),note('รายการที่ต้องดำเนินการจากคำสั่งเช่าของคุณ')),{wide:true}),
-    consignment:()=>modal('ส่งชุดเข้าคลัง',()=>h('div',{class:'stack'},note('บริการฝากคลังตามแบบ Figma เป็นพรีวิวในเดโมนี้ ยังไม่มีบริการรับชุด สแกน หรือจัดส่งอัตโนมัติ'),button('ลงชุดให้เช่า',()=>{close();openCosplayListing(ctx)},'dark'))),
-    feeInfo:()=>modal('ค่าธรรมเนียมและสิทธิพิเศษ Tier',()=>h('div',{class:'stack'},note('อัตรา 7% + 3% และ Damage Shield เป็นข้อมูลตัวอย่างตามแบบ Figma ยังไม่มีการหักค่าบริการหรือความคุ้มครองจริง ระบบจำลองยังปล่อยรายได้เต็มค่าเช่าตาม Booking เดิม'),lenderLedger()))
-  },tab);
-}
 $('modalClose').onclick=close;
 $('modal').addEventListener('cancel',()=>modalRenderer=null);
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))close()});
 $('accountBtn').onclick=()=>openAccounts(ctx);
 $('footerAccountBtn').onclick=()=>openAccounts(ctx);
 $('rentalBagBtn').onclick=()=>openRentalBag();
-$('sellBtn').onclick=()=>requireUser()&&openCosplayListing(ctx);
 $('globalSearch').onsubmit=event=>{event.preventDefault();filters.q=$('globalSearchInput').value.trim();go('#shop')};
 window.addEventListener('hashchange',()=>{close();render();window.scrollTo({top:0,behavior:'instant'});$('page').focus({preventScroll:true})});
 window.addEventListener('closet:changed',()=>task(async()=>{if(!repo)return;const prior=me();state=await repo.read();if(prior!==me()){studio=null;close();toast('บัญชีเปลี่ยนแล้ว อัปเดตข้อมูลในหน้านี้')}render()}));
