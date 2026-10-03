@@ -7,12 +7,13 @@ import {PRESETS,validateBody,calculateFit,calculateFitMatch} from './mannequin.j
 import {openCosplayListing} from './cosplay-seller.js';
 import {createStudioUI} from './studio-ui.js';
 import {rentalDays,rentalRangesOverlap} from './cosplay-domain.js';
-import {filterMarketplaceListings,marketplaceThemes,isIllustratedDemoCostume} from './marketplace-filter.js';
+import {filterMarketplaceListings,isIllustratedDemoCostume} from './marketplace-filter.js';
 import {OCCASION_CATEGORIES,OCCASION_LABELS} from './occasion-domain.js';
 import {rentalFitSummary,rentalPhase,rentalTimeline,rentalUrgency,renterNextAction} from './rental-presenter.js';
 import {lenderBookingBuckets,lenderLedgerRows,lenderNextAction,lenderSummary,listingRentalSchedule} from './lender-presenter.js';
 import {addPreviewPiece,removePreviewPiece} from './market-preview.js';
 import {marketNotifications} from './market-notifications.js';
+import {lineIcon,menuSelect} from './menu-select.js';
 
 const $=id=>document.getElementById(id);
 const DISCLAIMER='Virtual preview is an estimation and does not guarantee actual fit.';
@@ -111,8 +112,8 @@ function card(l){
   const saved=state.favorites[me()]?.includes(l.id),variant=l.sizeVariants.find(v=>v.stock&&(!filters.size||v.size===filters.size))||firstVariant(l),fit=fitFor(l,variant);
   return h('article',{class:'product-card'},
     h('a',{class:'product-photo',href:`#product/${l.id}`},h('img',{src:photoUrl(cover(l)),alt:`${l.character} — ${l.title}`}),h('span',{class:'badge'},CONDITIONS[l.condition]),h('span',{class:`fit-chip ${fit?'has-score':'unknown'}`},fit?`${fit.score}% Fit`:'Fit —')),
-    button(saved?'♥':'♡',()=>requireUser()&&run('favorite.toggle',{id:l.id}),'save-product',{'aria-label':`บันทึก ${l.title}`}),
-    h('div',{class:'product-info'},h('small',{},l.character),h('h3',{},h('a',{href:`#product/${l.id}`},l.title)),h('div',{class:'product-bottom'},h('span',{},l.sizeVariants.filter(v=>v.stock).map(v=>v.size).join(' / ')),h('b',{},`${money(minPrice(l))} / วัน`)),h('div',{class:'card-actions'},l.model?h('a',{class:'secondary',href:`#tryon/${l.id}/${variant.id}`},'⚝ 3D Preview'):h('span',{class:'secondary disabled'},'ไม่มี 3D'),button('เช่า',()=>openRental(l.id,variant.id),'dark',{disabled:l.sellerId===me()}))));
+    button(figmaIcon('market','imgContainer11'),()=>requireUser()&&run('favorite.toggle',{id:l.id}),'save-product',{'aria-label':`บันทึก ${l.title}`,'aria-pressed':String(!!saved)}),
+    h('div',{class:'product-info'},h('small',{},l.character),h('h3',{},h('a',{href:`#product/${l.id}`},l.title)),h('div',{class:'product-bottom'},h('span',{},l.sizeVariants.filter(v=>v.stock).map(v=>v.size).join(' / ')),h('b',{},`${money(minPrice(l))} / วัน`)),h('div',{class:'card-actions'},l.model?h('a',{class:'secondary',href:`#tryon/${l.id}/${variant.id}`},figmaIcon('market','imgContainer12'),'3D Preview'):h('span',{class:'secondary disabled'},'ไม่มี 3D'),button('เช่า',()=>openRental(l.id,variant.id),'dark',{disabled:l.sellerId===me()}))));
 }
 
 function renterCard(l,onPreview){
@@ -151,6 +152,8 @@ function homePage(){
 }
 
 function marketplace(){
+  // The removed advanced controls must not leave an invisible filter active.
+  filters.theme=filters.size=filters.condition=filters.maxPrice='';
   const grid=h('div',{class:'product-grid'}),pages=h('div',{class:'catalog-pagination'});let currentPage=1,previewId=null,previewVariant=null;
   const storedOutfit=marketPreviewDraft?.actorId===me()?marketPreviewDraft.outfit:state.studioProfiles?.[me()]?.outfit||{};
   let previewOpened=marketPreviewDraft?.actorId===me()&&marketPreviewDraft.opened||false;
@@ -162,22 +165,16 @@ function marketplace(){
     const allRows=rows(),pageCount=Math.max(1,Math.ceil(allRows.length/6));currentPage=Math.min(currentPage,pageCount);
     const list=allRows.slice((currentPage-1)*6,currentPage*6);
     pages.replaceChildren(h('small',{},'แสดง '+(allRows.length?(currentPage-1)*6+1:0)+' - '+Math.min(currentPage*6,allRows.length)+' จากทั้งหมด '+allRows.length+' ชุด'),h('div',{},...Array.from({length:pageCount},(_,i)=>button(String(i+1),()=>{currentPage=i+1;update(false)},currentPage===i+1?'dark':'secondary',{'aria-label':'หน้าที่ '+(i+1),'aria-current':currentPage===i+1?'page':null}))));
-    grid.replaceChildren(...(list.length?list.map(item=>renterCard(item,showPreview)):[empty('ยังไม่พบชุดที่ค้นหา','ลองเปลี่ยนคำค้น ไซซ์ ราคา หรือช่วงวันเช่า')]));
+    grid.replaceChildren(...(list.length?list.map(item=>renterCard(item,showPreview)):[empty('ยังไม่พบชุดที่ค้นหา','ลองเปลี่ยนคำค้น หมวด ประเภท หรือช่วงวันเช่า')]));
   }
-  const select=(key,label,options)=>h('select',{'aria-label':label,onchange:e=>{filters[key]=e.target.value;update()}},...options.map(([v,t])=>h('option',{value:v,selected:filters[key]===v},t)));
-  const themeNames={academy:'Academy',fantasy:'Fantasy',gothic:'Gothic'};
+  const select=(key,label,options)=>menuSelect({label,options,value:filters[key],onChange:value=>{filters[key]=value;update()}});
   const returnInput=h('input',{type:'date',min:filters.pickupDate||localDateKey(),value:filters.returnDate,'aria-label':'วันคืนชุด',onchange:e=>{filters.returnDate=e.target.value;update()}});
   const pickupInput=h('input',{type:'date',min:localDateKey(),value:filters.pickupDate,'aria-label':'วันรับชุด',onchange:e=>{filters.pickupDate=e.target.value;if(filters.returnDate&&filters.returnDate<filters.pickupDate)filters.returnDate='';returnInput.min=filters.pickupDate||localDateKey();returnInput.value=filters.returnDate;update()}});
   const filtersPanel=h('section',{class:'marketplace-filters','aria-label':'ตัวกรอง Marketplace'},
-    h('label',{class:'filter-block'},h('span',{},'หมวดหมู่หลัก'),select('occasion','หมวดหมู่หลัก',[['','ทั้งหมด (All Categories)'],...OCCASION_CATEGORIES.map(key=>[key,OCCASION_LABELS[key].title])])),
-    h('label',{class:'filter-block'},h('span',{},'ประเภทเสื้อผ้า'),select('type','ประเภทเสื้อผ้า',[['','ทุกประเภท (All Types)'],['top','เสื้อ'],['bottom','กางเกง'],['wig','วิก'],['accessory','เครื่องประดับ']])),
+    h('div',{class:'filter-block'},h('span',{},'หมวดหมู่หลัก'),select('occasion','หมวดหมู่หลัก',[['','ทั้งหมด (All Categories)'],...OCCASION_CATEGORIES.map(key=>[key,OCCASION_LABELS[key].title])])),
+    h('div',{class:'filter-block'},h('span',{},'ประเภทเสื้อผ้า'),select('type','ประเภทเสื้อผ้า',[['','ทุกประเภท (All Types)'],['top','เสื้อ'],['bottom','กางเกง'],['wig','วิก'],['accessory','เครื่องประดับ']])),
     h('div',{class:'filter-block market-date-filter'},h('span',{},'วันที่ต้องการเช่า'),h('div',{class:'market-date-range'},pickupInput,returnInput)),
-    h('label',{class:'filter-block'},h('span',{},'เรียงตาม'),select('sort','เรียงตาม',[['fit','ความพอดีตัวสูงสุด'],['latest','ล่าสุด'],['price','ราคาต่ำก่อน']])),
-    h('details',{class:'market-advanced-filters'},h('summary',{},uiIcon('filter'),'ตัวกรองเพิ่มเติม'),h('div',{class:'market-advanced-fields'},
-      h('label',{class:'filter-block'},h('span',{},'ธีม'),select('theme','ธีม',[['','ทุกธีม'],...marketplaceThemes(state.listings).map(x=>[x,themeNames[x]||x])])),
-      h('label',{class:'filter-block'},h('span',{},'ไซซ์'),select('size','ไซซ์',[['','ทุกไซซ์'],...['S','M','L','XL'].map(x=>[x,x])])),
-      h('label',{class:'filter-block'},h('span',{},'สภาพ'),select('condition','สภาพ',[['','ทุกสภาพ'],...Object.entries(CONDITIONS)])),
-      h('label',{class:'filter-block'},h('span',{},'ค่าเช่าต่อวันสูงสุด'),h('input',{type:'number',min:0,value:filters.maxPrice,placeholder:'ไม่เกิน ฿',oninput:e=>{filters.maxPrice=e.target.value;update()}})))));
+    h('div',{class:'filter-block'},h('span',{},'เรียงตาม'),select('sort','เรียงตาม',[['fit','ความพอดีตัวสูงสุด'],['latest','ล่าสุด'],['price','ราคาต่ำก่อน']])));
   const previewCanvas=h('div',{class:'market-preview-canvas'}),previewStatus=h('small',{class:'market-preview-status'}),previewNotice=h('p',{class:'market-preview-notice'}),previewName=h('b',{class:'market-preview-name'},'เลือกชิ้นส่วนเพื่อลองพร้อมกัน'),previewScore=h('span',{class:'market-preview-score'},'—'),previewChips=h('div',{class:'market-preview-chips'});
   const previewLink=button('Virtual Try-on',async()=>{if(!requireUser())return;await run('studio.outfit.save',{outfit:previewOutfit});go('#tryon')},'dark');
   const fitPreview=h('section',{class:`market-fit-preview${previewOpened?' active':''}`},h('div',{class:'market-preview-head'},h('strong',{},figmaIcon('market','imgContainer12'),'Preview Try-on'),h('a',{href:'#studio'},'แก้ไขหุ่น')),
@@ -190,7 +187,7 @@ function marketplace(){
     previewId=chosen?.item.id||null;previewVariant=chosen?.variant||null;
     previewName.textContent=chosen?`${chosen.item.title} · ไซซ์ ${chosen.variant.size}`:'ยังไม่ได้เลือกชิ้นส่วน';
     const fit=chosen?fitFor(chosen.item,chosen.variant):null;previewScore.textContent=fit?`${fit.score}%`:'—';
-    previewChips.replaceChildren(...entries.map(({slot,item,variant})=>h('div',{class:'market-preview-chip'},h('small',{},({top:'เสื้อ',bottom:'กางเกง',wig:'วิก',neck:'คอ',waist:'เอว',face:'ใบหน้า',hair:'ผม'})[slot]||slot),h('span',{},item.title),button('×',()=>{previewOutfit=removePreviewPiece(previewOutfit,slot);renderPreview()},'market-preview-remove',{'aria-label':`ถอด ${item.title}`}))));
+    previewChips.replaceChildren(...entries.map(({slot,item,variant})=>h('div',{class:'market-preview-chip'},h('small',{},({top:'เสื้อ',bottom:'กางเกง',wig:'วิก',neck:'คอ',waist:'เอว',face:'ใบหน้า',hair:'ผม'})[slot]||slot),h('span',{},item.title),button(lineIcon('close'),()=>{previewOutfit=removePreviewPiece(previewOutfit,slot);renderPreview()},'market-preview-remove',{'aria-label':`ถอด ${item.title}`}))));
     clearHeroStudio();previewCanvas.replaceChildren();previewStatus.textContent='กำลังเตรียมหุ่น 3D…';
     mountPreviewStudio(previewCanvas,previewStatus,null,null,bodyForFit()||undefined,previewOutfit);
     marketPreviewDraft={actorId:me(),outfit:structuredClone(previewOutfit),opened:previewOpened};

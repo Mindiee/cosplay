@@ -564,4 +564,70 @@ dialog .dialog-shell>#modalBody{padding:24px;background:#f9f9f7}
 @media(max-width:760px){.renter-design .catalog-shell>.marketplace-filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px}.renter-design .catalog-shell>.marketplace-filters>.filter-block{padding:6px}.market-advanced-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.renter-design .catalog-shell .market-fit-preview:not(.active){display:none}.renter-design .catalog-shell .market-fit-preview.active{display:flex;min-height:0}.renter-notification-menu{right:-106px;top:calc(100% + 10px)}.renter-notifications>summary{width:28px;height:32px}}
 @media(min-width:761px) and (max-width:900px){.renter-design .catalog-shell>.marketplace-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.renter-design .catalog-shell>.marketplace-filters>.market-date-filter{grid-column:1/-1}.renter-design .catalog-shell .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
 @media(max-width:760px){.renter-design .catalog-shell>.marketplace-filters>.market-date-filter{grid-column:1/-1}.renter-design .catalog-shell>.marketplace-filters>.filter-block:nth-child(4){grid-column:1/-1}}
+
+/* Shared dropdown language: the Marketplace and Clothing Library expose their
+   options in-page; remaining form selects retain native keyboard behavior. */
+.ui-dropdown{position:relative;min-width:0;font-size:11px;color:#171717}
+.ui-dropdown[open]{z-index:35}
+.ui-dropdown>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:36px;width:100%;padding:8px 11px;border:1px solid #e5e5e5;border-radius:8px;background:#fafaf8;list-style:none;cursor:pointer;white-space:nowrap}
+.ui-dropdown>summary::-webkit-details-marker{display:none}
+.ui-dropdown>summary:focus-visible,.ui-dropdown-option:focus-visible{outline:2px solid #171717;outline-offset:2px}
+.ui-dropdown-value{overflow:hidden;text-overflow:ellipsis}
+.ui-dropdown-chevron{flex:none;width:8px;height:8px;margin:-4px 2px 0 0;border-right:1.5px solid #767676;border-bottom:1.5px solid #767676;transform:rotate(45deg)}
+.ui-dropdown[open] .ui-dropdown-chevron{margin:4px 2px 0;transform:rotate(225deg)}
+.ui-dropdown-menu{position:absolute;z-index:40;top:calc(100% + 5px);left:0;width:max(100%,220px);max-width:min(320px,calc(100vw - 28px));max-height:285px;overflow:auto;border:1px solid #e5e5e5;border-radius:9px;background:#fff;box-shadow:0 9px 20px #0002}
+.ui-dropdown-option{display:grid;grid-template-columns:minmax(0,1fr) auto 15px;align-items:center;gap:8px;width:100%;min-height:34px;padding:8px 12px;border:0;border-bottom:1px solid #f2f2f2;border-radius:0;background:#fff;text-align:left;font-size:11px}
+.ui-dropdown-option:last-child{border-bottom:0}.ui-dropdown-option:hover,.ui-dropdown-option[aria-current=true]{background:#fafaf8}.ui-dropdown-option[aria-current=true]{font-weight:600}
+.ui-dropdown-option small{padding:2px 5px;border-radius:4px;background:#f5f5f5;color:#777;font-size:9px}
+.ui-dropdown-check{display:none;width:12px;height:7px;border-left:1.5px solid #171717;border-bottom:1.5px solid #171717;transform:rotate(-45deg)}
+.ui-dropdown-option[aria-current=true] .ui-dropdown-check{display:block}
+select:not([multiple]){appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%23666' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+select:not([multiple]):focus-visible{outline:2px solid #171717;outline-offset:2px}
+.line-icon{display:inline-block;flex:none;width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.renter-design .catalog-shell>.marketplace-filters .ui-dropdown{width:100%}
+
+/* Virtual Try-On: separate Fit and Clothing Library cards as in the supplied SVG. */
+.renter-design .tryon-unified-controls{border:0;border-radius:0;background:transparent;padding:0;overflow:visible;max-height:none}
+.renter-design .tryon-room-fit{padding:14px;border:1px solid #e5e5e5;border-radius:12px;background:#fff;box-shadow:0 2px 4px #0000000c}
+.renter-design .tryon-unified .studio-catalog-panel{height:auto;overflow:visible;margin:14px 0 0;padding:14px;border:1px solid #e5e5e5;border-radius:12px;background:#fff;box-shadow:0 2px 4px #0000000c}
+.renter-design .tryon-unified .studio-catalog-heading{margin:0 0 12px;align-items:end}
+.renter-design .tryon-unified .studio-detail{margin:0 0 12px;padding:12px;border:1px solid #e5e5e5;border-radius:8px;background:#fafaf8}
+.renter-design .tryon-selected-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.renter-design .tryon-selected-head small{font-size:10px;color:#666}
+.renter-design .tryon-selected-close{display:grid;place-items:center;width:20px;height:20px;margin:0;padding:2px;border:0;background:transparent;color:#777}
+.renter-design .tryon-selected-title{margin:2px 0 5px;font-size:13px;line-height:18px;font-weight:700}
+.renter-design .tryon-selected-price{display:block;font-size:14px;line-height:21px}
+.renter-design .tryon-selected-price small{font-size:10px;font-weight:400;color:#666}
+.renter-design .tryon-unified .studio-sizes{display:flex;gap:5px;margin:8px 0}
+.renter-design .tryon-unified .studio-sizes button{min-width:24px;min-height:25px;margin:0;padding:3px 5px;border-radius:4px;font-size:10px}
+.renter-design .tryon-selected-measures{margin:8px 0;color:#666;font-size:9px;line-height:14px}
+.renter-design .tryon-selected-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.renter-design .tryon-selected-actions button{width:100%;height:32px;min-height:32px;margin:0;padding:3px 2px;border-radius:5px;font-size:10px;line-height:16px}
+.renter-design .tryon-selected-product{display:flex;justify-content:center;align-items:center;gap:4px;margin:7px 0 0;font-size:9px;color:#666}
+.renter-design .tryon-selected-product .line-icon{width:10px;height:10px}
+.renter-design .tryon-selected-credit{margin-top:7px;font-size:9px;color:#777}
+.renter-design .tryon-selected-credit summary{cursor:pointer;text-align:center}
+.renter-design .tryon-selected-credit a{display:block;overflow-wrap:anywhere;text-align:center}
+.renter-design .tryon-unified .studio-toolbar{display:grid;grid-template-columns:1fr;gap:7px}
+.renter-design .tryon-unified .studio-search{height:32px;padding:6px 9px;border:1px solid #e5e5e5;border-radius:8px;background:#fafaf8}
+.renter-design .tryon-unified .studio-search input{font-size:10px}
+.renter-design .tryon-unified .studio-categories{display:flex;flex-wrap:nowrap;gap:5px;margin:9px 0 12px;overflow-x:auto;scrollbar-width:none}
+.renter-design .tryon-unified .studio-categories button{flex:none;padding:4px 8px;border-radius:999px;font-size:10px;white-space:nowrap}
+.renter-design .tryon-unified .studio-categories button[aria-pressed=true]{background:#171717;border-color:#171717}
+.renter-design .tryon-unified .studio-grid{gap:6px}
+.renter-design .tryon-unified .studio-item{border:1px solid #e5e5e5;border-radius:6px;overflow:hidden}
+.renter-design .tryon-unified .studio-photo{height:65px;aspect-ratio:auto;border:0!important;border-radius:0}
+.renter-design .tryon-unified .studio-photo img{object-fit:cover}
+.renter-design .tryon-unified .studio-item-copy h3{height:26px;margin:0 0 2px;font-size:9px;line-height:13px;font-weight:600}
+.renter-design .tryon-unified .studio-item-price strong{font-size:9px}
+.renter-design .tryon-unified .studio-item-copy>button{min-height:24px;padding:4px 2px;border-radius:4px;font-size:9px}
+.renter-design .tryon-unified .studio-camera .line-icon{width:14px;height:14px}
+.renter-design .tryon-unified .studio-intro{margin-bottom:0}
+.renter-design .tryon-unified .tryon-room-fit{padding:12px}
+.renter-design .tryon-unified .tryon-room-score{margin:7px 0;padding:8px}
+.renter-design .tryon-unified .tryon-room-fit-row{padding:3px 0}
+.renter-design .tryon-unified .studio-catalog-panel{padding:10px 14px 14px}
+.renter-design .tryon-unified .studio-catalog-heading{margin-bottom:8px}
+.renter-design .tryon-unified .studio-theme-select[hidden]{display:none}
+@media(max-width:760px){.renter-design .tryon-unified-controls{grid-row:2}.renter-design .tryon-unified .studio-catalog-panel{padding:14px}.renter-design .tryon-unified .studio-photo{height:100px}.renter-design .tryon-unified .studio-item-copy h3{height:auto;min-height:27px}}
 @media(max-width:390px){.renter-design .catalog-shell>.marketplace-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.market-date-range{grid-template-columns:repeat(2,minmax(0,1fr))}}
