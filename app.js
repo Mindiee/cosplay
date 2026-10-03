@@ -11,12 +11,15 @@ import {filterMarketplaceListings,marketplaceThemes,isIllustratedDemoCostume} fr
 import {OCCASION_CATEGORIES,OCCASION_LABELS} from './occasion-domain.js';
 import {rentalFitSummary,rentalPhase,rentalTimeline,rentalUrgency,renterNextAction} from './rental-presenter.js';
 import {lenderBookingBuckets,lenderLedgerRows,lenderNextAction,lenderSummary,listingRentalSchedule} from './lender-presenter.js';
+import {addPreviewPiece,removePreviewPiece} from './market-preview.js';
+import {marketNotifications} from './market-notifications.js';
 
 const $=id=>document.getElementById(id);
 const DISCLAIMER='Virtual preview is an estimation and does not guarantee actual fit.';
 const CONDITIONS={like_new:'เหมือนใหม่',good:'สภาพดี',defect:'มีตำหนิ'};
 let repo,state,modalRenderer=null,previousFocus,toastTimer,studio=null,heroStudio=null,heroMount=0;
 let mixStudio=null,mixStudioMode='',studioCatalog=null,studioCatalogError='',studioRouteApplied='';
+let marketPreviewDraft=null;
 let filters={q:'',occasion:'',theme:'',type:'',size:'',condition:'',maxPrice:'',pickupDate:'',returnDate:'',sort:'fit'};
 const me=()=>state?.settings.currentUserId;
 const user=id=>state.profiles.find(p=>p.id===id);
@@ -75,11 +78,11 @@ function mountHeroStudio(host,status){
     heroStudio=createHeroStudio(host,state,studioCatalog,messages=>{status.textContent=messages.length?messages.join(' · '):'ลากเพื่อหมุนหุ่น 360°'});
   }).catch(error=>{console.error(error);if(mount===heroMount)status.textContent='ไม่สามารถเปิดตัวอย่าง 3D ได้ · เปิด 3D Studio เพื่อโหลดใหม่'});
 }
-function mountPreviewStudio(host,status,item,variant,body){
+function mountPreviewStudio(host,status,item,variant,body,outfit){
   heroStudio?.dispose?.();heroStudio=null;const mount=++heroMount;
   import('./hero-studio.js').then(({createPreviewStudio})=>{
     if(mount!==heroMount||!host.isConnected)return;
-    heroStudio=createPreviewStudio(host,state,studioCatalog,{listingId:item.id,variantId:variant.id,body},messages=>{status.textContent=messages.length?messages.join(' · '):'ลากเพื่อหมุน · เลื่อนเพื่อซูม'});
+    heroStudio=createPreviewStudio(host,state,studioCatalog,{listingId:item?.id,variantId:variant?.id,body,outfit},messages=>{status.textContent=messages.length?messages.join(' · '):'ลากเพื่อหมุน · เลื่อนเพื่อซูม'});
   }).catch(error=>{console.error(error);if(mount===heroMount)status.textContent='ไม่สามารถเปิดพรีวิว 3D ได้'});
 }
 const ctx={get state(){return state},run,modal,close,toast,task,openCloset:tab=>go(`#closet/${tab==='selling'?'listings':tab||'listings'}`)};
@@ -95,7 +98,7 @@ function render(){
   const inStudio=route==='studio',studioView=inStudio||route==='tryon';document.body.classList.toggle('studio-active',inStudio);
   document.body.classList.toggle('lender-active',route==='closet');
   const renterDesign=['shop','product','tryon','studio','rentals'].includes(route);document.body.classList.toggle('renter-design',renterDesign);
-  const shell=view=>renterDesign?[renterHeader({profile:user(me()),accounts:()=>openAccounts(ctx),search:q=>{filters.q=q;go('#shop')},bag:openRentalBag,bagCount}),view,renterFooter(()=>openAccounts(ctx))]:[view];
+  const shell=view=>renterDesign?[renterHeader({profile:user(me()),accounts:()=>openAccounts(ctx),search:q=>{filters.q=q;go('#shop')},searchValue:filters.q,notifications:marketNotifications(state,me()),bag:openRentalBag,bagCount}),view,renterFooter(()=>openAccounts(ctx))]:[view];
   clearHeroStudio();
   if(studioView){const mode=inStudio?'studio':'tryon';if(mixStudio&&mixStudioMode!==mode){mixStudio.dispose();mixStudio=null}if(!mixStudio){mixStudio=createStudioUI({...ctx,get state(){return state},rental:openRental,checkoutOutfit:async items=>{if(!requireUser())return;await run('rentalBag.addMany',{items});openRentalBag()},accounts:()=>openAccounts(ctx)},studioCatalog,studioCatalogError,{mode});mixStudioMode=mode}else mixStudio.update(state);$('page').replaceChildren(...shell(mixStudio.element));const routeKey=mode==='tryon'&&id?`${id}/${routeVariant||''}`:'';if(routeKey&&routeKey!==studioRouteApplied){studioRouteApplied=routeKey;task(()=>mixStudio.wearItem(id,routeVariant));}if(!routeKey)studioRouteApplied='';return;}
   if(mixStudio){mixStudio.dispose();mixStudio=null;mixStudioMode=''}
@@ -148,40 +151,61 @@ function homePage(){
 }
 
 function marketplace(){
-  const grid=h('div',{class:'product-grid'}),count=h('span',{class:'result-count'}),pages=h('div',{class:'catalog-pagination'});let currentPage=1,previewId=null;
+  const grid=h('div',{class:'product-grid'}),pages=h('div',{class:'catalog-pagination'});let currentPage=1,previewId=null,previewVariant=null;
+  const storedOutfit=marketPreviewDraft?.actorId===me()?marketPreviewDraft.outfit:state.studioProfiles?.[me()]?.outfit||{};
+  let previewOpened=marketPreviewDraft?.actorId===me()&&marketPreviewDraft.opened||false;
+  let previewOutfit=Object.fromEntries(Object.entries(storedOutfit).filter(([slot,ref])=>state.listings.some(item=>item.id===ref?.listingId&&item.attachmentSlot===slot&&item.model?.url&&item.status!=='deleted'&&item.sizeVariants.some(variant=>variant.id===ref?.variantId))));
+  if(!Object.keys(previewOutfit).length){const candidates=state.listings.filter(item=>item.model?.url&&item.status==='active');const top=candidates.find(item=>item.attachmentSlot==='top'),bottom=candidates.find(item=>item.attachmentSlot==='bottom'&&item.theme===top?.theme);for(const item of [top,bottom])if(item)previewOutfit=addPreviewPiece(previewOutfit,item,firstVariant(item));}
   const rows=()=>{const fitScores={};for(const item of state.listings){if(isIllustratedDemoCostume(item))continue;const result=fitFor(item,item.sizeVariants.find(v=>v.stock&&(!filters.size||v.size===filters.size))||firstVariant(item));if(result)fitScores[item.id]=result.score}return filterMarketplaceListings(state.listings,{...filters,fitScores,availableVariantIds:availableVariantIds()})};
   function update(reset=true){
     if(reset)currentPage=1;
     const allRows=rows(),pageCount=Math.max(1,Math.ceil(allRows.length/6));currentPage=Math.min(currentPage,pageCount);
     const list=allRows.slice((currentPage-1)*6,currentPage*6);
     pages.replaceChildren(h('small',{},'แสดง '+(allRows.length?(currentPage-1)*6+1:0)+' - '+Math.min(currentPage*6,allRows.length)+' จากทั้งหมด '+allRows.length+' ชุด'),h('div',{},...Array.from({length:pageCount},(_,i)=>button(String(i+1),()=>{currentPage=i+1;update(false)},currentPage===i+1?'dark':'secondary',{'aria-label':'หน้าที่ '+(i+1),'aria-current':currentPage===i+1?'page':null}))));
-    count.textContent=`(${allRows.length} รายการ)`;
     grid.replaceChildren(...(list.length?list.map(item=>renterCard(item,showPreview)):[empty('ยังไม่พบชุดที่ค้นหา','ลองเปลี่ยนคำค้น ไซซ์ ราคา หรือช่วงวันเช่า')]));
-    queueMicrotask(()=>{
-      if(!root.isConnected)return;
-      const selected=allRows.find(item=>item.id===previewId);
-      if(!allRows.length){clearHeroStudio();previewId=null;previewCanvas.replaceChildren();previewName.textContent='ไม่พบชุดตามตัวกรอง';previewStatus.textContent='';previewLink.href='#tryon';return;}
-      const next=selected||allRows[0],variant=next.sizeVariants.find(v=>v.stock&&(!filters.size||v.size===filters.size))||firstVariant(next);
-      if(!selected||filters.size&&!previewName.textContent.includes('ไซซ์ '+filters.size))showPreview(next,variant,false);
-    });
   }
   const select=(key,label,options)=>h('select',{'aria-label':label,onchange:e=>{filters[key]=e.target.value;update()}},...options.map(([v,t])=>h('option',{value:v,selected:filters[key]===v},t)));
   const themeNames={academy:'Academy',fantasy:'Fantasy',gothic:'Gothic'};
+  const returnInput=h('input',{type:'date',min:filters.pickupDate||localDateKey(),value:filters.returnDate,'aria-label':'วันคืนชุด',onchange:e=>{filters.returnDate=e.target.value;update()}});
+  const pickupInput=h('input',{type:'date',min:localDateKey(),value:filters.pickupDate,'aria-label':'วันรับชุด',onchange:e=>{filters.pickupDate=e.target.value;if(filters.returnDate&&filters.returnDate<filters.pickupDate)filters.returnDate='';returnInput.min=filters.pickupDate||localDateKey();returnInput.value=filters.returnDate;update()}});
   const filtersPanel=h('section',{class:'marketplace-filters','aria-label':'ตัวกรอง Marketplace'},
-    h('label',{class:'filter-block'},h('span',{},'โอกาส'),select('occasion','โอกาส',[['','ทุกโอกาส'],...OCCASION_CATEGORIES.map(key=>[key,OCCASION_LABELS[key].title])])),
-    h('label',{class:'filter-block'},h('span',{},'ธีม'),select('theme','ธีม',[['','ทุกธีม'],...marketplaceThemes(state.listings).map(x=>[x,themeNames[x]||x])])),
-    h('label',{class:'filter-block'},h('span',{},'ชนิด'),select('type','ชนิด',[['','ทั้งหมด'],['top','เสื้อ'],['bottom','กางเกง'],['wig','วิก'],['accessory','เครื่องประดับ']])),
-    h('label',{class:'filter-block'},h('span',{},'ไซซ์'),select('size','ไซซ์',[['','ทุกไซซ์'],...['S','M','L','XL'].map(x=>[x,x])])),
-    h('label',{class:'filter-block'},h('span',{},'สภาพ'),select('condition','สภาพ',[['','ทุกสภาพ'],...Object.entries(CONDITIONS)])),
-    h('label',{class:'filter-block'},h('span',{},'งบประมาณค่าเช่าสูงสุด / วัน'),h('input',{type:'number',min:0,value:filters.maxPrice,placeholder:'ไม่เกิน ฿',oninput:e=>{filters.maxPrice=e.target.value;update()}})),
-    h('label',{class:'filter-block'},h('span',{},'วันรับชุด'),h('input',{type:'date',min:localDateKey(),value:filters.pickupDate,onchange:e=>{filters.pickupDate=e.target.value;if(filters.returnDate&&filters.returnDate<filters.pickupDate)filters.returnDate=filters.pickupDate;update()}})),
-    h('label',{class:'filter-block'},h('span',{},'วันส่งคืน'),h('input',{type:'date',min:filters.pickupDate||localDateKey(),value:filters.returnDate,onchange:e=>{filters.returnDate=e.target.value;update()}})));
-  const previewCanvas=h('div',{class:'market-preview-canvas'}),previewStatus=h('small',{class:'market-preview-status'}),previewName=h('b',{class:'market-preview-name'},'เลือกชุดเพื่อดูพรีวิว'),previewLink=h('a',{class:'dark',href:'#tryon'},'Virtual Try-on');
-  function showPreview(item,variant,scroll=true){previewId=item.id;previewName.textContent=item.title+' · ไซซ์ '+variant.size;previewLink.href='#tryon/'+item.id+'/'+variant.id;clearHeroStudio();previewCanvas.replaceChildren();if(item.model)mountPreviewStudio(previewCanvas,previewStatus,item,variant,bodyForFit()||undefined);else{previewCanvas.append(h('img',{class:'market-preview-photo',src:photoUrl(cover(item)),alt:item.title}));previewStatus.textContent='ชิ้นนี้ไม่มีโมเดล 3D · แสดงภาพสินค้าจริง'};if(scroll)previewCanvas.scrollIntoView({behavior:'smooth',block:'nearest'});}
-  const fitPreview=h('section',{class:'market-fit-preview'},h('div',{class:'market-preview-head'},h('strong',{},figmaIcon('market','imgContainer12'),'Preview Try-on'),h('a',{href:'#studio'},'แก้ไขหุ่น')),previewCanvas,previewName,previewStatus,h('div',{class:'market-body-caption'},figmaIcon('market','imgContainer12'),h('span',{},'ตรงกับหุ่นของฉัน',h('small',{},bodyForFit()?(user(me())?.name||'หุ่นของฉัน')+' ('+bodyForFit().height+' ซม.)':'ยังไม่ได้บันทึกสัดส่วน'))),previewLink);
+    h('label',{class:'filter-block'},h('span',{},'หมวดหมู่หลัก'),select('occasion','หมวดหมู่หลัก',[['','ทั้งหมด (All Categories)'],...OCCASION_CATEGORIES.map(key=>[key,OCCASION_LABELS[key].title])])),
+    h('label',{class:'filter-block'},h('span',{},'ประเภทเสื้อผ้า'),select('type','ประเภทเสื้อผ้า',[['','ทุกประเภท (All Types)'],['top','เสื้อ'],['bottom','กางเกง'],['wig','วิก'],['accessory','เครื่องประดับ']])),
+    h('div',{class:'filter-block market-date-filter'},h('span',{},'วันที่ต้องการเช่า'),h('div',{class:'market-date-range'},pickupInput,returnInput)),
+    h('label',{class:'filter-block'},h('span',{},'เรียงตาม'),select('sort','เรียงตาม',[['fit','ความพอดีตัวสูงสุด'],['latest','ล่าสุด'],['price','ราคาต่ำก่อน']])),
+    h('details',{class:'market-advanced-filters'},h('summary',{},uiIcon('filter'),'ตัวกรองเพิ่มเติม'),h('div',{class:'market-advanced-fields'},
+      h('label',{class:'filter-block'},h('span',{},'ธีม'),select('theme','ธีม',[['','ทุกธีม'],...marketplaceThemes(state.listings).map(x=>[x,themeNames[x]||x])])),
+      h('label',{class:'filter-block'},h('span',{},'ไซซ์'),select('size','ไซซ์',[['','ทุกไซซ์'],...['S','M','L','XL'].map(x=>[x,x])])),
+      h('label',{class:'filter-block'},h('span',{},'สภาพ'),select('condition','สภาพ',[['','ทุกสภาพ'],...Object.entries(CONDITIONS)])),
+      h('label',{class:'filter-block'},h('span',{},'ค่าเช่าต่อวันสูงสุด'),h('input',{type:'number',min:0,value:filters.maxPrice,placeholder:'ไม่เกิน ฿',oninput:e=>{filters.maxPrice=e.target.value;update()}})))));
+  const previewCanvas=h('div',{class:'market-preview-canvas'}),previewStatus=h('small',{class:'market-preview-status'}),previewNotice=h('p',{class:'market-preview-notice'}),previewName=h('b',{class:'market-preview-name'},'เลือกชิ้นส่วนเพื่อลองพร้อมกัน'),previewScore=h('span',{class:'market-preview-score'},'—'),previewChips=h('div',{class:'market-preview-chips'});
+  const previewLink=button('Virtual Try-on',async()=>{if(!requireUser())return;await run('studio.outfit.save',{outfit:previewOutfit});go('#tryon')},'dark');
+  const fitPreview=h('section',{class:`market-fit-preview${previewOpened?' active':''}`},h('div',{class:'market-preview-head'},h('strong',{},figmaIcon('market','imgContainer12'),'Preview Try-on'),h('a',{href:'#studio'},'แก้ไขหุ่น')),
+    h('div',{class:'market-preview-stage'},previewCanvas,previewScore),previewStatus,previewNotice,
+    h('div',{class:'market-body-caption'},figmaIcon('market','imgContainer12'),h('span',{},'ตรงกับหุ่นของฉัน',h('small',{},bodyForFit()?(user(me())?.name||'หุ่นของฉัน')+' ('+bodyForFit().height+' ซม.)':'ยังไม่ได้บันทึกสัดส่วน'))),
+    h('div',{class:'market-preview-selection'},h('strong',{},'ชุดที่กำลังลอง'),previewName,previewChips),previewLink);
+  function renderPreview(){
+    const entries=Object.entries(previewOutfit).map(([slot,ref])=>({slot,item:listing(ref.listingId),variant:listing(ref.listingId)?.sizeVariants.find(v=>v.id===ref.variantId)})).filter(row=>row.item&&row.variant);
+    const chosen=entries.find(row=>row.item.id===previewId&&row.variant.id===previewVariant?.id)||entries[0];
+    previewId=chosen?.item.id||null;previewVariant=chosen?.variant||null;
+    previewName.textContent=chosen?`${chosen.item.title} · ไซซ์ ${chosen.variant.size}`:'ยังไม่ได้เลือกชิ้นส่วน';
+    const fit=chosen?fitFor(chosen.item,chosen.variant):null;previewScore.textContent=fit?`${fit.score}%`:'—';
+    previewChips.replaceChildren(...entries.map(({slot,item,variant})=>h('div',{class:'market-preview-chip'},h('small',{},({top:'เสื้อ',bottom:'กางเกง',wig:'วิก',neck:'คอ',waist:'เอว',face:'ใบหน้า',hair:'ผม'})[slot]||slot),h('span',{},item.title),button('×',()=>{previewOutfit=removePreviewPiece(previewOutfit,slot);renderPreview()},'market-preview-remove',{'aria-label':`ถอด ${item.title}`}))));
+    clearHeroStudio();previewCanvas.replaceChildren();previewStatus.textContent='กำลังเตรียมหุ่น 3D…';
+    mountPreviewStudio(previewCanvas,previewStatus,null,null,bodyForFit()||undefined,previewOutfit);
+    marketPreviewDraft={actorId:me(),outfit:structuredClone(previewOutfit),opened:previewOpened};
+  }
+  function showPreview(item,variant,scroll=true){
+    previewOpened=true;
+    fitPreview.classList.add('active');
+    if(!item.model?.url||!item.attachmentSlot){renderPreview();previewNotice.textContent=`${item.title} ยังไม่มีโมเดล 3D · ดูภาพจริงได้ในหน้าสินค้า`;if(scroll)fitPreview.scrollIntoView({behavior:'smooth',block:'nearest'});return;}
+    previewNotice.textContent='';
+    previewOutfit=addPreviewPiece(previewOutfit,item,variant);previewId=item.id;previewVariant=variant;renderPreview();
+    if(scroll&&matchMedia('(max-width:760px)').matches)fitPreview.scrollIntoView({behavior:'smooth',block:'start'});
+  }
   const root=h('section',{class:'catalog-shell'},filtersPanel,
-    h('div',{class:'marketplace-layout'},h('aside',{class:'marketplace-sidebar'},fitPreview),h('div',{class:'catalog-main'},h('div',{class:'catalog-topbar'},h('div',{},h('b',{},'ชุดพร้อมเช่า'),count),select('sort','เรียงลำดับ',[['fit','ความพอดีตัวสูงสุด'],['latest','ล่าสุด'],['price','ราคาต่ำก่อน']])),grid,pages,h('p',{class:'asset-note'},'ภาพ ประกาศ ราคา และคะแนน Fit Match เป็นข้อมูลสาธิตสำหรับต้นแบบการเช่า'))));
-  update();return root;
+    h('div',{class:'marketplace-layout'},h('aside',{class:'marketplace-sidebar'},fitPreview),h('div',{class:'catalog-main'},grid,pages,h('p',{class:'asset-note'},'ภาพ ประกาศ ราคา และคะแนน Fit Match เป็นข้อมูลสาธิตสำหรับต้นแบบการเช่า'))));
+  update();queueMicrotask(()=>{if(root.isConnected&&(!matchMedia('(max-width:760px)').matches||previewOpened))renderPreview()});return root;
 }
 
 function gallery(l){

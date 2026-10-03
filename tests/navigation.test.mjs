@@ -96,8 +96,9 @@ test('Home matches the supplied Figma sections and reuses the existing 3D hero r
   assert.match(styles,/\.home-hero-description/);
   assert.match(styles,/\.home-hero-actions/);
   assert.match(app,/select\('theme','ธีม'/);
-  assert.match(app,/select\('type','ชนิด'/);
-  assert.match(app,/select\('occasion','โอกาส'/);
+  assert.match(app,/select\('type','ประเภทเสื้อผ้า'/);
+  assert.match(app,/select\('occasion','หมวดหมู่หลัก'/);
+  assert.match(app,/class:'market-date-range'/);
   assert.match(app,/class:'marketplace-filters'/);
 });
 

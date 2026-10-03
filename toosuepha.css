@@ -523,3 +523,45 @@ dialog .dialog-shell>#modalBody{padding:24px;background:#f9f9f7}
 .renter-design .studio-body-only .studio-outfit{display:none}
 @media(max-width:1100px){.renter-design .tryon-unified-layout{grid-template-columns:minmax(230px,280px) minmax(0,1fr)}.renter-design .tryon-room-rental{grid-column:1/-1;position:static}.renter-design .tryon-unified .studio-left{top:76px}.renter-design .studio-body-only .studio-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 @media(max-width:760px){.renter-design .tryon-unified-layout{display:grid;grid-template-columns:1fr}.renter-design .tryon-unified .studio-left{grid-row:1;position:static}.renter-design .tryon-unified-controls{grid-row:2;max-height:none;position:static}.renter-design .tryon-room-rental{grid-row:3;grid-column:1}.renter-design .tryon-unified .studio-view{min-height:540px}.renter-design .tryon-unified .studio-canvas{height:455px}.renter-design .studio-body-only .studio-layout{grid-template-columns:1fr}.renter-design .tryon-unified .studio-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Marketplace reference: one compact filter row, a persistent desktop preview, and a notification popover. */
+.renter-design .catalog-shell>.marketplace-filters{grid-template-columns:repeat(4,minmax(0,1fr));padding:13px 15px 9px}
+.renter-design .catalog-shell>.marketplace-filters>.filter-block{padding:7px 8px}
+.market-date-range{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.renter-design .market-date-range input{width:100%;min-width:0;padding:5px 2px;font-size:10px}
+.market-advanced-filters{grid-column:1/-1;margin:3px 8px 0;border-top:1px solid #efefef}
+.market-advanced-filters summary{display:flex;align-items:center;gap:6px;width:max-content;min-height:32px;cursor:pointer;color:#555;font-size:11px;list-style:none}
+.market-advanced-filters summary::-webkit-details-marker{display:none}
+.market-advanced-filters .ui-icon{width:14px;height:14px}
+.market-advanced-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 10px;padding:6px 0 10px}
+.renter-design .catalog-shell .market-advanced-fields>.filter-block{grid-area:auto!important;grid-column:auto!important;grid-row:auto!important;padding:5px 0}
+.renter-design .catalog-shell .market-fit-preview{min-height:700px;gap:12px}
+.market-preview-stage{position:relative;border-top:1px solid #eee}
+.renter-design .catalog-shell .market-preview-canvas{height:320px;border:0}
+.market-preview-score{position:absolute;right:5px;top:12px;display:grid;place-items:center;width:47px;height:47px;border:4px solid #171717;border-radius:50%;background:#fff;font-size:12px;font-weight:700}
+.market-preview-selection{display:grid;gap:9px;margin-top:4px}
+.market-preview-selection>strong{font-size:12px;color:#666}
+.market-preview-name{font-size:10px;color:#666}
+.market-preview-notice{margin:0;color:#805918;font-size:10px;line-height:15px}
+.market-preview-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-height:190px;overflow:auto}
+.market-preview-chip{position:relative;min-width:0;min-height:67px;padding:9px 22px 9px 9px;border:1px solid #e5e5e5;border-radius:10px;background:#fafaf8}
+.market-preview-chip small,.market-preview-chip span{display:block;font-size:10px;line-height:14px}
+.market-preview-chip small{color:#666}.market-preview-chip span{font-weight:600;overflow-wrap:anywhere}
+.market-preview-remove{position:absolute;right:5px;top:4px;border:0;background:transparent;color:#666;cursor:pointer}
+.renter-design .market-fit-preview>button.dark{width:100%;margin-top:auto;padding:11px;font-size:12px}
+.renter-notifications{position:relative;flex:none}
+.renter-notifications>summary{position:relative;display:grid;place-items:center;width:36px;height:40px;cursor:pointer;list-style:none;border-radius:999px}
+.renter-notifications>summary::-webkit-details-marker{display:none}
+.renter-notifications>summary:focus-visible{outline:2px solid #171717;outline-offset:2px}
+.notification-indicator{position:absolute;right:0;top:1px;min-width:16px;height:16px;padding:1px 4px;border-radius:999px;background:#ef4355;color:#fff;font-size:9px;line-height:14px;text-align:center}
+.renter-notification-menu{position:absolute;right:-28px;top:calc(100% + 13px);width:min(384px,calc(100vw - 28px));max-height:min(590px,calc(100vh - 84px));overflow:auto;border:1px solid #e5e5e5;border-radius:14px;background:#fff;box-shadow:0 15px 40px #0002;z-index:90}
+.notification-menu-head{display:flex;justify-content:space-between;gap:10px;padding:15px 16px;border-bottom:1px solid #eee}.notification-menu-head b{font-size:14px}.notification-menu-head small{font-size:10px;color:#666}
+.renter-notification-item{display:grid;gap:4px;padding:13px 16px;border-bottom:1px solid #eee;text-decoration:none;color:#171717}
+.renter-notification-item.urgent{background:#fff7f7}.renter-notification-item:hover{background:#fafaf8}.renter-notification-item span{font-size:10px;color:#ef4355}.renter-notification-item b{font-size:12px}.renter-notification-item small{font-size:11px;color:#666}
+.renter-notification-item .notification-item-cta{justify-self:start;margin-top:5px;padding:6px 16px;border-radius:7px;background:#171717;color:#fff;font-size:10px;font-weight:600}
+.notification-empty{padding:20px 16px;margin:0;color:#666;font-size:12px}
+.notification-menu-all{display:block;padding:12px;text-align:center;background:#fafaf8;font-size:11px;color:#333}
+@media(max-width:760px){.renter-design .catalog-shell>.marketplace-filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px}.renter-design .catalog-shell>.marketplace-filters>.filter-block{padding:6px}.market-advanced-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.renter-design .catalog-shell .market-fit-preview:not(.active){display:none}.renter-design .catalog-shell .market-fit-preview.active{display:flex;min-height:0}.renter-notification-menu{right:-106px;top:calc(100% + 10px)}.renter-notifications>summary{width:28px;height:32px}}
+@media(min-width:761px) and (max-width:900px){.renter-design .catalog-shell>.marketplace-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.renter-design .catalog-shell>.marketplace-filters>.market-date-filter{grid-column:1/-1}.renter-design .catalog-shell .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
+@media(max-width:760px){.renter-design .catalog-shell>.marketplace-filters>.market-date-filter{grid-column:1/-1}.renter-design .catalog-shell>.marketplace-filters>.filter-block:nth-child(4){grid-column:1/-1}}
+@media(max-width:390px){.renter-design .catalog-shell>.marketplace-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.market-date-range{grid-template-columns:repeat(2,minmax(0,1fr))}}
