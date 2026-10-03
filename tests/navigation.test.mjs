@@ -21,7 +21,7 @@ test('standalone My Mannequin navigation is removed while 3D Studio stays availa
   assert.match(app, /route\s*===\s*["']studio["']/);
 });
 
-test('TooSuePha Figma navigation keeps marketplace, rentals and lender actions reachable',async()=>{
+test('TooSueaPha Figma navigation keeps marketplace, rentals and lender actions reachable',async()=>{
   const [html,app,studio,seller,styles]=await Promise.all([
     readFile(new URL('index.html',root),'utf8'),
     readFile(new URL('app.js',root),'utf8'),
@@ -32,8 +32,8 @@ test('TooSuePha Figma navigation keeps marketplace, rentals and lender actions r
   assert.match(app,/function openRental\(/);
   assert.match(app,/rentalBag\.add/);
   assert.match(app,/rental\.checkout/);
-  assert.match(html,/<title>TooSuePha — Rental Marketplace<\/title>/);
-  assert.match(html,/class="brand" href="#home"[^>]*>Too<span>SuePha<\/span>/);
+  assert.match(html,/<title>TooSueaPha — Rental Marketplace<\/title>/);
+  assert.match(html,/class="brand" href="#home"[^>]*>Too<span>SueaPha<\/span>/);
   assert.match(html,/class="figma-nav-links"/);
   assert.match(html,/href="#shop"[^>]*>Marketplace<\/a>/);
   assert.match(html,/href="#rentals"[^>]*>My Rentals<\/a>/);
@@ -87,7 +87,7 @@ test('Home matches the supplied Figma sections and reuses the existing 3D hero r
   assert.match(app,/mountHeroStudio\(heroHost,heroStatus\)/);
   assert.match(app,/เสื้อผ้าสำหรับทุกโอกาสของคุณ/);
   assert.match(app,/ชุดนี้จะพอดีกับเราไหม/);
-  assert.match(app,/Too Suea Pha ช่วยให้คุณตัดสินใจได้ก่อนเช่า/);
+  assert.match(app,/TooSueaPha ช่วยให้คุณตัดสินใจได้ก่อนเช่า/);
   assert.match(app,/จากสัดส่วนสู่ชุดที่เหมาะกับคุณ ช่วยให้ตัดสินใจเช่าได้ง่ายขึ้น/);
   assert.match(app,/พร้อมสร้างหุ่นจำลอง 3D ของคุณแล้วหรือยัง/);
   assert.match(styles,/\.home-hero-title/);

@@ -1,4 +1,4 @@
-# TooSuePha — Rental Marketplace MVP
+# TooSueaPha — Rental Marketplace MVP
 
 ต้นแบบเว็บเช่าเสื้อผ้าหลายโอกาสแบบ Frontend-only ครอบคลุม Costume, Travel, Outdoor, Formal และ Event พร้อมห้องลอง 3D ที่หมุนรอบได้ ผู้ใช้เลือกหุ่นชายหรือหญิง ปรับส่วนสูง อก เอว สะโพก และไหล่ แล้วผสมเสื้อ กางเกง วิก และเครื่องประดับจากคนละร้านได้ในหน้าเดียว
 
