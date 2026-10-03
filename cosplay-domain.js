@@ -101,6 +101,19 @@ export function transitionCosplay(state,action,payload={},now=Date.now(),actorId
     if(!bag.items.some(row=>row.listingId===item.id&&row.variantId===variant.id))bag.items.push({listingId:item.id,variantId:variant.id,addedAt:now});
     event(action,{userId:actor.id,listingId:item.id,variantId:variant.id});return {count:bag.items.length};
   }
+  if(action==='rentalBag.addMany'){
+    if(!Array.isArray(payload.items)||!payload.items.length||payload.items.length>20)fail('เลือกชุดที่จะเช่า 1–20 ชิ้น');
+    const selected=payload.items.map(row=>{
+      const item=find(row?.listingId),variant=item.sizeVariants.find(v=>v.id===row?.variantId);
+      if(item.sellerId===actor.id)fail('เช่าชุดของตัวเองไม่ได้');
+      if(item.status!=='active'||!variant||variant.stock<1)fail(`${item.title} ไซซ์นี้ไม่พร้อมให้เช่า`);
+      if(validateCosplayListing(item).length)fail('ข้อมูลสินค้าไม่ถูกต้อง');
+      return {listingId:item.id,variantId:variant.id};
+    });
+    const bag=state.rentalBags[actor.id]??={items:[],pickupDate:'',returnDate:''};
+    for(const row of selected)if(!bag.items.some(existing=>existing.listingId===row.listingId&&existing.variantId===row.variantId))bag.items.push({...row,addedAt:now});
+    event(action,{userId:actor.id,count:selected.length});return {count:bag.items.length};
+  }
   if(action==='rentalBag.remove'){
     const bag=state.rentalBags[actor.id]??={items:[],pickupDate:'',returnDate:''},index=bag.items.findIndex(row=>row.listingId===payload.listingId&&row.variantId===payload.variantId);
     if(index<0)fail('ไม่พบชุดนี้ในรายการเช่า');bag.items.splice(index,1);return {count:bag.items.length};

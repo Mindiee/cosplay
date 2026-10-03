@@ -92,15 +92,15 @@ function render(){
   const accountName=user(me())?.name||'บัญชีเดโม';$('accountBtn').title=accountName;$('accountBtn').setAttribute('aria-label',`บัญชี ${accountName}`);
   const bagCount=state.rentalBags?.[me()]?.items?.length||0;$('rentalBagBtn').querySelector('span').textContent=`รายการเช่า · ${bagCount}`;
   const [route,id,routeVariant]=location.hash.slice(1).split('/');
-  const inStudio=route==='studio';const libraryRoute=route==='tryon'&&!id;const studioView=inStudio||libraryRoute;document.body.classList.toggle('studio-active',inStudio);
+  const inStudio=route==='studio',studioView=inStudio||route==='tryon';document.body.classList.toggle('studio-active',inStudio);
   document.body.classList.toggle('lender-active',route==='closet');
   const renterDesign=['shop','product','tryon','studio','rentals'].includes(route);document.body.classList.toggle('renter-design',renterDesign);
   const shell=view=>renterDesign?[renterHeader({profile:user(me()),accounts:()=>openAccounts(ctx),search:q=>{filters.q=q;go('#shop')},bag:openRentalBag,bagCount}),view,renterFooter(()=>openAccounts(ctx))]:[view];
   clearHeroStudio();
-  if(studioView){const mode=libraryRoute?'tryon':'studio';if(mixStudio&&mixStudioMode!==mode){mixStudio.dispose();mixStudio=null}if(!mixStudio){mixStudio=createStudioUI({...ctx,get state(){return state},rental:openRental,accounts:()=>openAccounts(ctx)},studioCatalog,studioCatalogError,{mode});mixStudioMode=mode}else mixStudio.update(state);$('page').replaceChildren(...shell(mixStudio.element));const routeKey=id?`${id}/${routeVariant||''}`:'';if(routeKey&&routeKey!==studioRouteApplied){studioRouteApplied=routeKey;task(()=>mixStudio.wearItem(id,routeVariant));}if(!routeKey)studioRouteApplied='';return;}
+  if(studioView){const mode=inStudio?'studio':'tryon';if(mixStudio&&mixStudioMode!==mode){mixStudio.dispose();mixStudio=null}if(!mixStudio){mixStudio=createStudioUI({...ctx,get state(){return state},rental:openRental,checkoutOutfit:async items=>{if(!requireUser())return;await run('rentalBag.addMany',{items});openRentalBag()},accounts:()=>openAccounts(ctx)},studioCatalog,studioCatalogError,{mode});mixStudioMode=mode}else mixStudio.update(state);$('page').replaceChildren(...shell(mixStudio.element));const routeKey=mode==='tryon'&&id?`${id}/${routeVariant||''}`:'';if(routeKey&&routeKey!==studioRouteApplied){studioRouteApplied=routeKey;task(()=>mixStudio.wearItem(id,routeVariant));}if(!routeKey)studioRouteApplied='';return;}
   if(mixStudio){mixStudio.dispose();mixStudio=null;mixStudioMode=''}
   studioRouteApplied='';
-  const view=route==='shop'?marketplace():route==='product'?productPage(id):route==='tryon'?tryOnPage(id):route==='rentals'?rentalsPage():route==='saved'?savedPage():route==='closet'?closetPage(id||'listings'):route==='rental'?rentalDetailPage(id):homePage();
+  const view=route==='shop'?marketplace():route==='product'?productPage(id):route==='rentals'?rentalsPage():route==='saved'?savedPage():route==='closet'?closetPage(id||'listings'):route==='rental'?rentalDetailPage(id):homePage();
   $('page').replaceChildren(...shell(view));
 }
 

@@ -6,6 +6,18 @@ import { existsSync } from 'node:fs';
 test('all 12 original sets remain while every rental demo validates and its assets exist',()=>{const s=makeCosplaySeed(100),originals=s.listings.filter(l=>l.id.startsWith('cos-'));assert.equal(originals.length,12);assert.equal(s.listings.length,20);for(const l of s.listings){assert.deepEqual(validateCosplayListing(l),[]);for(const p of [...l.photos,...l.costumeLayers])assert.ok(existsSync(new URL('../'+p.src,import.meta.url)));}assert.equal(originals.filter(l=>l.condition==='defect').length,2);});
 test('legacy identity preserved without sharing mutable state',()=>{const old={profiles:[{id:'u1',name:'Custom',email:'me@x.test'}],settings:{currentUserId:'u1'}};const s=makeCosplaySeed(100,old);assert.equal(s.profiles[0].name,'Custom');s.profiles[0].name='Other';assert.equal(old.profiles[0].name,'Custom');});
 test('seed includes empty rental storage alongside legacy orders',()=>{const s=makeCosplaySeed(100);assert.deepEqual(s.rentals,[]);assert.deepEqual(s.orders,[]);});
+test('trying several pieces adds their selected sizes to one rental bag atomically',()=>{
+  const s=makeCosplaySeed(100),actor=s.settings.currentUserId;
+  const available=s.listings.filter(l=>l.sellerId!==actor&&l.status==='active'&&l.sizeVariants.some(v=>v.stock));
+  const picks=available.slice(0,2).map(l=>({listingId:l.id,variantId:l.sizeVariants.find(v=>v.stock).id}));
+  assert.equal(act(s,'rentalBag.addMany',{items:picks},200).count,2);
+  assert.deepEqual(s.rentalBags[actor].items.map(row=>[row.listingId,row.variantId]),picks.map(row=>[row.listingId,row.variantId]));
+  assert.equal(act(s,'rentalBag.addMany',{items:picks},201).count,2);
+  const own=s.listings.find(l=>l.sellerId===actor);
+  const before=structuredClone(s.rentalBags[actor]);
+  assert.throws(()=>act(s,'rentalBag.addMany',{items:[picks[0],{listingId:own.id,variantId:own.sizeVariants[0].id}]},202),/ตัวเอง/);
+  assert.deepEqual(s.rentalBags[actor],before);
+});
 test('purchase snapshots selected price, consumes only selected variant, refuses duplicate',()=>{const s=makeCosplaySeed(100),l=s.listings[0],v=l.sizeVariants[0];const result=act(s,'purchase.create',{listingId:l.id,variantId:v.id,actorId:'u1'},200);assert.equal(s.orders[0].id,result.id);assert.equal(s.orders[0].price,v.price);assert.equal(v.stock,0);assert.equal(l.sizeVariants[1].stock,1);assert.equal(s.orders[0].snapshot.sizeVariants[0].stock,1);assert.throws(()=>act(s,'purchase.create',{listingId:l.id,variantId:v.id},201));assert.equal(s.orders.length,1);});
 test('failed self purchase and cross-tab actor do not mutate anything',()=>{const s=makeCosplaySeed(100),before=structuredClone(s);assert.throws(()=>act(s,'purchase.create',{listingId:s.listings[2].id,variantId:s.listings[2].sizeVariants[0].id},200));assert.deepEqual(s,before);for(const action of ['favorite.toggle','listing.status','profile.switch','profile.create','mannequin.save'])assert.throws(()=>act(s,action,{actorId:'u2'},200),/บัญชีเปลี่ยน/);assert.deepEqual(s,before);});
 test('ownership protected and sold variants cannot be removed or changed or replenished',()=>{const s=makeCosplaySeed(100),l=s.listings[0];assert.throws(()=>act(s,'listing.save',{listing:structuredClone(l)},200));act(s,'purchase.create',{listingId:l.id,variantId:l.sizeVariants[0].id},200);act(s,'profile.switch',{id:'u2'});let draft=structuredClone(l);draft.sizeVariants[0].stock=1;act(s,'listing.save',{listing:draft},300);assert.equal(l.sizeVariants[0].stock,0);draft=structuredClone(l);draft.sizeVariants.shift();assert.throws(()=>act(s,'listing.save',{listing:draft},400));draft=structuredClone(l);draft.sizeVariants[0].price+=1;assert.throws(()=>act(s,'listing.save',{listing:draft},400));});
