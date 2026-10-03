@@ -16,6 +16,6 @@ test('Thai Anuphan and English Inter are self-hosted with consistent weights',as
   assert.match(css,/unicode-range:U\+0E00-0E7F/);
   assert.match(css,/unicode-range:U\+0000-024F/);
   assert.equal((css.match(/font-weight:300 700/g)||[]).length,2);
-  assert.match(css,/--ui-font:"Anuphan","Inter",sans-serif/);
+  assert.match(css,/--ui-font:"Inter","Anuphan",sans-serif/);
   assert.match(css,/body,button,input,select,textarea\{font-family:var\(--ui-font\)!important/);
 });

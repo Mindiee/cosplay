@@ -78,6 +78,8 @@ test('Home matches the supplied Figma sections and reuses the existing 3D hero r
   assert.match(app,/Rent what you need\./);
   assert.match(app,/ตู้เสื้อผ้า/);
   assert.match(app,/สำหรับทุกโอกาส เช็กความพอดีและลองก่อนเช่า/);
+  assert.match(app,/ปัดเพื่อดูรูปถัดไป/);
+  assert.match(app,/onpointerup:e=>/);
   assert.match(app,/class:'home-hero-copy'/);
   assert.match(app,/class:'home-hero-actions'/);
   assert.match(app,/href:'#shop'/);
@@ -95,8 +97,8 @@ test('Home matches the supplied Figma sections and reuses the existing 3D hero r
   assert.match(styles,/\.home-hero-actions/);
   assert.match(app,/select\('theme','ธีม'/);
   assert.match(app,/select\('type','ชนิด'/);
-  assert.match(app,/class:'occasion-chips'/);
-  assert.match(app,/filters\.occasion=key/);
+  assert.match(app,/select\('occasion','โอกาส'/);
+  assert.match(app,/class:'marketplace-filters'/);
 });
 
 test('Home uses the Figma icon language, centered search, and one explicit type system',async()=>{
@@ -115,7 +117,7 @@ test('Home uses the Figma icon language, centered search, and one explicit type 
   assert.match(html,/class="ui-icon nav-plus-icon"/);
   assert.match(html,/class="ui-icon footer-shield-icon"/);
   assert.doesNotMatch(html,/[＋◉]/);
-  assert.match(styles,/--ui-font:"Anuphan","Inter",sans-serif/);
+  assert.match(styles,/--ui-font:"Inter","Anuphan",sans-serif/);
   assert.match(styles,/\.topbar \.global-search\{position:absolute;left:50%;transform:translateX\(-50%\)/);
   assert.match(styles,/font-family:var\(--ui-font\)/);
 });
@@ -127,14 +129,15 @@ test('My Rentals has overview history and one booking detail route for receive a
   ]);
   assert.match(app,/function rentalDetailPage\(/);
   assert.match(app,/route==='rental'\?rentalDetailPage\(id\)/);
-  assert.match(app,/กำลังเช่าและต้องดำเนินการ/);
-  assert.match(app,/ประวัติการเช่า/);
+  assert.match(app,/class:'rental-feature'/);
+  assert.match(app,/class:'rental-tabs'/);
+  assert.match(app,/class:'rental-table-row'/);
   assert.match(app,/ขั้นตอนรับชุด/);
   assert.match(app,/ขั้นตอนคืนชุด/);
   assert.match(app,/Mock Payment/);
   assert.match(app,/Mock Escrow/);
   assert.doesNotMatch(app,/#(?:receive|return)\//);
-  assert.match(styles,/\.rental-overview-card/);
+  assert.match(styles,/\.rental-feature/);
   assert.match(styles,/\.rental-timeline/);
   assert.match(styles,/\.rental-detail-grid/);
 });

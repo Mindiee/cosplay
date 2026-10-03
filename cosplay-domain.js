@@ -1,4 +1,5 @@
 import {BODY_LIMITS,profileStudio,validateStudioBody,cleanOutfit} from './studio-domain.js';
+import {OCCASION_CATEGORIES} from './occasion-domain.js';
 const fail = message => { throw new Error(message); };
 const uid = (prefix,now) => `${prefix}-${now.toString(36)}-${Math.random().toString(36).slice(2,10)}`;
 const text = value => typeof value === 'string' && value.trim().length > 0;
@@ -40,6 +41,7 @@ const blocksDates=booking=>!['pending','cancelled'].includes(booking.status);
 const conflicts=(state,listingId,variantId,pickupDate,returnDate,ignoreId=null)=>state.rentals.some(row=>row.id!==ignoreId&&blocksDates(row)&&bookingItems(row).some(item=>item.listingId===listingId&&item.variantId===variantId)&&rentalRangesOverlap(pickupDate,returnDate,row.pickupDate,row.returnDate));
 export function validateCosplayListing(item) {
   const errors=[]; if(!item || typeof item !== 'object') return ['ข้อมูลสินค้าไม่ถูกต้อง'];
+  if(item.occasionCategory!==undefined&&!OCCASION_CATEGORIES.includes(item.occasionCategory))errors.push('หมวดโอกาสไม่ถูกต้อง');
   for(const key of ['character','title','series','description']) if(!text(item[key]) || item[key].length>5000) errors.push(`กรอก ${key} ให้ถูกต้อง`);
   if(!Array.isArray(item.components)||!item.components.length||item.components.some(v=>!text(v))) errors.push('ระบุชิ้นส่วนชุด');
   if(!['good','like_new','defect'].includes(item.condition)) errors.push('สภาพชุดไม่ถูกต้อง');
@@ -161,7 +163,8 @@ export function transitionCosplay(state,action,payload={},now=Date.now(),actorId
   if(action==='listing.save'){
     const input=payload.listing;if(!input||typeof input!=='object')fail('ข้อมูลสินค้าไม่ถูกต้อง');const existing=input.id?find(input.id):null;
     if(existing&&(existing.sellerId!==actor.id||existing.status==='deleted'))fail('แก้ไขได้เฉพาะสินค้าของคุณที่ยังไม่ลบ');
-    const candidate=structuredClone(Object.fromEntries(['character','title','series','description','components','condition','photos','coverId','defects','costumeLayers','lengthTarget','sizeVariants'].map(k=>[k,input[k]])));
+    const candidate=structuredClone(Object.fromEntries(['occasionCategory','character','title','series','description','components','condition','photos','coverId','defects','costumeLayers','lengthTarget','sizeVariants'].map(k=>[k,input[k]])));
+    candidate.occasionCategory=input.occasionCategory??existing?.occasionCategory??'costume';
     const errors=validateCosplayListing(candidate);if(errors.length)fail(errors.join('\n'));
     if(existing)for(const sold of existing.sizeVariants.filter(v=>v.stock===0)){
       const variant=candidate.sizeVariants.find(v=>v.id===sold.id);if(!variant||variant.size!==sold.size||variant.price!==sold.price||Object.keys(sold.measurements).some(k=>variant.measurements[k]!==sold.measurements[k]))fail('เปลี่ยนหรือลบไซซ์ที่ขายแล้วไม่ได้');variant.stock=0;
